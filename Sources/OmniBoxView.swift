@@ -1,29 +1,31 @@
-import SwiftUI
 import Combine
+import SwiftUI
 
 struct OmniBoxView: View {
     @ObservedObject var spaceManager: SpaceManager
     let onDismiss: () -> Void
     let onOpenSettings: () -> Void
-    
+
     @State private var searchText = ""
     @State private var selectedIndex = 0
     @FocusState private var isTextFieldFocused: Bool
     @State private var eventMonitor: Any?
-    
-    private var filteredSpaces: [Space] {
+
+    // Current space for display
+    private var currentSpace: Space? {
+        spaceManager.spaces.first(where: { $0.isCurrent })
+    }
+
+    private func getFilteredSpaces() -> [Space] {
         if searchText.isEmpty {
             return spaceManager.spaces
         }
+        let query = searchText.lowercased()
         return spaceManager.spaces.filter { space in
-            fuzzyMatch(query: searchText.lowercased(), target: space.displayName.lowercased())
+            fuzzyMatch(query: query, target: space.displayName.lowercased())
         }
     }
-    
-    private var isRenameMode: Bool {
-        !searchText.isEmpty && filteredSpaces.isEmpty
-    }
-    
+
     var body: some View {
         mainContent
             .frame(width: 560, height: 380)
@@ -38,7 +40,7 @@ struct OmniBoxView: View {
                 selectedIndex = 0
             }
     }
-    
+
     @ViewBuilder
     private var backgroundView: some View {
         ZStack {
@@ -46,7 +48,7 @@ struct OmniBoxView: View {
             Color(nsColor: NSColor.windowBackgroundColor).opacity(0.7)
         }
     }
-    
+
     @ViewBuilder
     private var mainContent: some View {
         VStack(spacing: 0) {
@@ -57,38 +59,58 @@ struct OmniBoxView: View {
             helpBar
         }
     }
-    
+
     @ViewBuilder
     private var searchBar: some View {
-        HStack(spacing: 14) {
-            Image(systemName: isRenameMode ? "pencil" : "magnifyingglass")
-                .font(.system(size: 18, weight: .medium))
-                .foregroundColor(isRenameMode ? Color.accentColor : Color.secondary)
-                .animation(.easeInOut(duration: 0.2), value: isRenameMode)
-            
-            TextField("Search spaces or type to rename...", text: $searchText)
-                .textFieldStyle(PlainTextFieldStyle())
-                .font(.system(size: 22, weight: .light, design: .rounded))
-                .focused($isTextFieldFocused)
-                .onSubmit(handleSubmit)
-            
-            if !searchText.isEmpty {
-                clearButton
+        let filtered = getFilteredSpaces()
+        let renameMode = !searchText.isEmpty && filtered.isEmpty
+
+        VStack(spacing: 8) {
+            // Current space indicator
+            if let current = currentSpace {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(Color.green)
+                        .frame(width: 6, height: 6)
+                    Text("Current: \(current.displayName)")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundColor(Color.secondary)
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
             }
-            
-            modeIndicator
-            
-            settingsButton
+
+            HStack(spacing: 14) {
+                Image(systemName: renameMode ? "pencil" : "magnifyingglass")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(renameMode ? Color.accentColor : Color.secondary)
+                    .animation(.easeInOut(duration: 0.2), value: renameMode)
+
+                TextField("Search spaces or type to rename...", text: $searchText)
+                    .textFieldStyle(PlainTextFieldStyle())
+                    .font(.system(size: 22, weight: .light, design: .rounded))
+                    .focused($isTextFieldFocused)
+                // Don't use onSubmit - let the key event monitor handle all Enter presses
+
+                if !searchText.isEmpty {
+                    clearButton
+                }
+
+                modeIndicator
+
+                settingsButton
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 18)
     }
-    
+
     @ViewBuilder
     private var clearButton: some View {
-        Button(action: { 
+        Button(action: {
             withAnimation(.easeOut(duration: 0.15)) {
-                searchText = "" 
+                searchText = ""
             }
         }) {
             Image(systemName: "xmark.circle.fill")
@@ -98,12 +120,12 @@ struct OmniBoxView: View {
         .buttonStyle(PlainButtonStyle())
         .transition(.scale.combined(with: .opacity))
     }
-    
+
     @ViewBuilder
     private var modeIndicator: some View {
         let modeText = spaceManager.isYabaiMode ? "yabai" : "native"
         let modeColor = spaceManager.isYabaiMode ? Color.green : Color.orange
-        
+
         HStack(spacing: 4) {
             Circle()
                 .fill(modeColor)
@@ -116,7 +138,7 @@ struct OmniBoxView: View {
         .background(modeColor.opacity(0.15))
         .clipShape(Capsule())
     }
-    
+
     @ViewBuilder
     private var settingsButton: some View {
         Button(action: {
@@ -129,17 +151,21 @@ struct OmniBoxView: View {
         .buttonStyle(PlainButtonStyle())
         .help("Settings")
     }
-    
+
     @ViewBuilder
     private var resultsList: some View {
+        let spacesToShow = getFilteredSpaces()
+        let renameMode = !searchText.isEmpty && spacesToShow.isEmpty
+
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(spacing: 4) {
-                    if isRenameMode {
+                    if renameMode {
                         RenamePromptRow(name: searchText)
                             .onTapGesture(perform: renameCurrentSpace)
                     } else {
-                        ForEach(Array(filteredSpaces.enumerated()), id: \.element.id) { index, space in
+                        ForEach(Array(spacesToShow.enumerated()), id: \.offset) {
+                            index, space in
                             SpaceRow(
                                 space: space,
                                 isSelected: index == selectedIndex,
@@ -152,8 +178,8 @@ struct OmniBoxView: View {
                             }
                         }
                     }
-                    
-                    if filteredSpaces.isEmpty && searchText.isEmpty {
+
+                    if spacesToShow.isEmpty && searchText.isEmpty {
                         emptyStateView
                     }
                 }
@@ -167,7 +193,7 @@ struct OmniBoxView: View {
             }
         }
     }
-    
+
     @ViewBuilder
     private var emptyStateView: some View {
         VStack(spacing: 12) {
@@ -181,7 +207,7 @@ struct OmniBoxView: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 40)
     }
-    
+
     @ViewBuilder
     private var helpBar: some View {
         HStack(spacing: 16) {
@@ -198,7 +224,7 @@ struct OmniBoxView: View {
         .padding(.vertical, 12)
         .background(Color(nsColor: NSColor.controlBackgroundColor).opacity(0.5))
     }
-    
+
     @ViewBuilder
     private var borderOverlay: some View {
         RoundedRectangle(cornerRadius: 20, style: .continuous)
@@ -206,7 +232,7 @@ struct OmniBoxView: View {
                 LinearGradient(
                     colors: [
                         Color.white.opacity(0.2),
-                        Color.white.opacity(0.05)
+                        Color.white.opacity(0.05),
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -214,19 +240,19 @@ struct OmniBoxView: View {
                 lineWidth: 1
             )
     }
-    
+
     private func handleAppear() {
         isTextFieldFocused = true
         spaceManager.refreshSpaces()
         selectedIndex = 0
         searchText = ""
-        
+
         // Setup key event monitor for navigation
         eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             return self.handleKeyEvent(event)
         }
     }
-    
+
     private func handleDisappear() {
         // Clean up event monitor
         if let monitor = eventMonitor {
@@ -234,96 +260,104 @@ struct OmniBoxView: View {
             eventMonitor = nil
         }
     }
-    
+
     private func handleKeyEvent(_ event: NSEvent) -> NSEvent? {
         switch event.keyCode {
-        case 53: // Escape
+        case 53:  // Escape
             onDismiss()
             return nil
-        case 125: // Down arrow
+        case 125:  // Down arrow
             moveSelection(by: 1)
             return nil
-        case 126: // Up arrow
+        case 126:  // Up arrow
             moveSelection(by: -1)
             return nil
-        case 36: // Return
+        case 36:  // Return/Enter
             if event.modifierFlags.contains(.command) {
-                renameCurrentSpace()
+                // Cmd+Enter always renames (even if there are matches)
+                performRename()
+                return nil
             } else {
+                // Regular Enter - switch if matches exist, rename if no matches
                 handleSubmit()
+                return nil
             }
-            return nil
         default:
             return event
         }
     }
-    
+
     private func moveSelection(by offset: Int) {
-        guard !isRenameMode else { return }
-        
+        let filtered = getFilteredSpaces()
+        let renameMode = !searchText.isEmpty && filtered.isEmpty
+        guard !renameMode else { return }
+
         let newIndex = selectedIndex + offset
-        if newIndex >= 0 && newIndex < filteredSpaces.count {
+        if newIndex >= 0 && newIndex < filtered.count {
             selectedIndex = newIndex
         }
     }
-    
+
     private func handleSubmit() {
+        let filtered = getFilteredSpaces()
+        let renameMode = !searchText.isEmpty && filtered.isEmpty
+
         // If in rename mode (no matching spaces), rename current space
-        if isRenameMode {
-            renameCurrentSpace()
+        if renameMode {
+            performRename()
             return
         }
-        
+
         // If there are no filtered spaces, do nothing
-        guard !filteredSpaces.isEmpty else { return }
-        
+        guard !filtered.isEmpty else { return }
+
         // If selected index is out of bounds, do nothing
-        guard selectedIndex >= 0 && selectedIndex < filteredSpaces.count else { return }
-        
-        let targetSpace = filteredSpaces[selectedIndex]
+        guard selectedIndex >= 0 && selectedIndex < filtered.count else { return }
+
+        let targetSpace = filtered[selectedIndex]
         spaceManager.switchTo(space: targetSpace)
         onDismiss()
     }
-    
-    private func renameCurrentSpace() {
-        guard !searchText.isEmpty else { return }
-        
-        // Get the current space first
-        guard let currentSpace = spaceManager.spaces.first(where: { $0.isCurrent }) else {
-            print("No current space found to rename")
-            return
-        }
-        
-        print("Renaming space \(currentSpace.index) to: \(searchText)")
-        spaceManager.renameSpace(space: currentSpace, to: searchText)
-        
-        // Clear and refresh
+
+    private func performRename() {
+        let nameToSave = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !nameToSave.isEmpty else { return }
+
+        // Get the current space - try isCurrent first, then fall back to first space
+        let currentSpace =
+            spaceManager.spaces.first(where: { $0.isCurrent }) ?? spaceManager.spaces.first
+        guard let space = currentSpace else { return }
+
+        // Perform rename first
+        spaceManager.renameSpace(space: space, to: nameToSave)
+
+        // Then clear text
         searchText = ""
         selectedIndex = 0
-        
-        // Small delay to let the rename complete
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            spaceManager.refreshSpaces()
-        }
     }
-    
+
+    // Keep old function for compatibility but redirect to performRename
+    private func renameCurrentSpace() {
+        performRename()
+    }
+
     private func fuzzyMatch(query: String, target: String) -> Bool {
         // Simple contains match for better UX
         if target.contains(query) {
             return true
         }
-        
+
         // Fuzzy character sequence match
         var queryIndex = query.startIndex
         var targetIndex = target.startIndex
-        
+
         while queryIndex < query.endIndex && targetIndex < target.endIndex {
             if query[queryIndex] == target[targetIndex] {
                 queryIndex = query.index(after: queryIndex)
             }
             targetIndex = target.index(after: targetIndex)
         }
-        
+
         return queryIndex == query.endIndex
     }
 }
@@ -332,9 +366,9 @@ struct SpaceRow: View {
     let space: Space
     let isSelected: Bool
     let isCurrent: Bool
-    
+
     @State private var isHovered = false
-    
+
     var body: some View {
         HStack(spacing: 14) {
             spaceIcon
@@ -343,7 +377,6 @@ struct SpaceRow: View {
             if isCurrent {
                 currentBadge
             }
-            shortcutHint
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
@@ -356,7 +389,7 @@ struct SpaceRow: View {
             }
         }
     }
-    
+
     @ViewBuilder
     private var backgroundStyle: some View {
         if isSelected {
@@ -367,7 +400,7 @@ struct SpaceRow: View {
             Color.clear
         }
     }
-    
+
     @ViewBuilder
     private var selectionBorder: some View {
         if isSelected {
@@ -375,31 +408,35 @@ struct SpaceRow: View {
                 .strokeBorder(Color.accentColor.opacity(0.5), lineWidth: 1.5)
         }
     }
-    
+
     @ViewBuilder
     private var spaceIcon: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(
                     isCurrent
-                        ? LinearGradient(colors: [Color.accentColor, Color.accentColor.opacity(0.8)], startPoint: .top, endPoint: .bottom)
-                        : LinearGradient(colors: [Color.secondary.opacity(0.2), Color.secondary.opacity(0.15)], startPoint: .top, endPoint: .bottom)
+                        ? LinearGradient(
+                            colors: [Color.accentColor, Color.accentColor.opacity(0.8)],
+                            startPoint: .top, endPoint: .bottom)
+                        : LinearGradient(
+                            colors: [Color.secondary.opacity(0.2), Color.secondary.opacity(0.15)],
+                            startPoint: .top, endPoint: .bottom)
                 )
                 .frame(width: 40, height: 40)
-            
+
             Text("\(space.index)")
                 .font(.system(size: 16, weight: .bold, design: .rounded))
                 .foregroundColor(isCurrent ? Color.white : Color.primary.opacity(0.8))
         }
     }
-    
+
     @ViewBuilder
     private var spaceInfo: some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(space.displayName)
                 .font(.system(size: 15, weight: .semibold, design: .rounded))
                 .foregroundColor(Color.primary)
-            
+
             if let label = space.label, !label.isEmpty, label != space.displayName {
                 Text("Desktop \(space.index)")
                     .font(.system(size: 11))
@@ -407,7 +444,7 @@ struct SpaceRow: View {
             }
         }
     }
-    
+
     @ViewBuilder
     private var currentBadge: some View {
         HStack(spacing: 4) {
@@ -422,26 +459,14 @@ struct SpaceRow: View {
         .background(Color.green.opacity(0.15))
         .clipShape(Capsule())
     }
-    
-    @ViewBuilder
-    private var shortcutHint: some View {
-        if space.index <= 9 {
-            Text("⌃\(space.index)")
-                .font(.system(size: 11, weight: .medium, design: .monospaced))
-                .foregroundColor(Color.secondary.opacity(0.7))
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.secondary.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 5))
-        }
-    }
+
 }
 
 struct RenamePromptRow: View {
     let name: String
-    
+
     @State private var isHovered = false
-    
+
     var body: some View {
         HStack(spacing: 14) {
             ZStack {
@@ -454,12 +479,12 @@ struct RenamePromptRow: View {
                         )
                     )
                     .frame(width: 40, height: 40)
-                
+
                 Image(systemName: "pencil")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.white)
             }
-            
+
             VStack(alignment: .leading, spacing: 3) {
                 Text("Rename current space to")
                     .font(.system(size: 12))
@@ -468,9 +493,9 @@ struct RenamePromptRow: View {
                     .font(.system(size: 15, weight: .semibold, design: .rounded))
                     .foregroundColor(Color.primary)
             }
-            
+
             Spacer()
-            
+
             HStack(spacing: 4) {
                 Image(systemName: "return")
                     .font(.system(size: 10))
@@ -504,7 +529,7 @@ struct RenamePromptRow: View {
 struct HelpItem: View {
     let key: String
     let action: String
-    
+
     var body: some View {
         HStack(spacing: 5) {
             Text(key)
@@ -514,7 +539,7 @@ struct HelpItem: View {
                 .padding(.vertical, 3)
                 .background(Color.primary.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 4))
-            
+
             Text(action)
                 .font(.system(size: 10))
                 .foregroundColor(Color.secondary)
@@ -525,7 +550,7 @@ struct HelpItem: View {
 struct VisualEffectView: NSViewRepresentable {
     let material: NSVisualEffectView.Material
     let blendingMode: NSVisualEffectView.BlendingMode
-    
+
     func makeNSView(context: Context) -> NSVisualEffectView {
         let view = NSVisualEffectView()
         view.material = material
@@ -534,7 +559,7 @@ struct VisualEffectView: NSViewRepresentable {
         view.wantsLayer = true
         return view
     }
-    
+
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
         nsView.material = material
         nsView.blendingMode = blendingMode

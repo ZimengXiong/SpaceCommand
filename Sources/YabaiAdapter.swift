@@ -51,7 +51,9 @@ class YabaiAdapter: SpaceService {
         
         // Try switching by label first if available, then by index
         if let label = space.label, !label.isEmpty {
-            _ = shell("\(yabai) -m space --focus \(label)")
+            // Escape quotes in label if needed
+            let escapedLabel = label.replacingOccurrences(of: "\"", with: "\\\"")
+            _ = shell("\(yabai) -m space --focus \"\(escapedLabel)\"")
         } else {
             _ = shell("\(yabai) -m space --focus \(space.index)")
         }
@@ -59,7 +61,8 @@ class YabaiAdapter: SpaceService {
     
     func renameSpace(space: Space, to name: String) {
         guard let yabai = yabaiPath else { return }
-        // Escape the name for shell
+        // Escape the name for shell - specifically double quotes and spaces if needed,
+        // but since we wrap in quotes, we mainly need to escape quotes.
         let escapedName = name.replacingOccurrences(of: "\"", with: "\\\"")
         _ = shell("\(yabai) -m space \(space.index) --label \"\(escapedName)\"")
     }

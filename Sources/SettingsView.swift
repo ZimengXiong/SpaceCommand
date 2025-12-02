@@ -33,8 +33,6 @@ class AppSettings: ObservableObject {
         static let showInDock = "showInDock"
         static let launchAtLogin = "launchAtLogin"
         static let showModeIndicator = "showModeIndicator"
-        static let accentColorName = "accentColorName"
-        static let panelOpacity = "panelOpacity"
         static let showShortcutHints = "showShortcutHints"
     }
     
@@ -59,14 +57,6 @@ class AppSettings: ObservableObject {
         didSet { defaults.set(showModeIndicator, forKey: Keys.showModeIndicator) }
     }
     
-    @Published var accentColorName: String {
-        didSet { defaults.set(accentColorName, forKey: Keys.accentColorName) }
-    }
-    
-    @Published var panelOpacity: Double {
-        didSet { defaults.set(panelOpacity, forKey: Keys.panelOpacity) }
-    }
-    
     @Published var showShortcutHints: Bool {
         didSet { defaults.set(showShortcutHints, forKey: Keys.showShortcutHints) }
     }
@@ -79,8 +69,6 @@ class AppSettings: ObservableObject {
             Keys.showInDock: false,
             Keys.launchAtLogin: false,
             Keys.showModeIndicator: true,
-            Keys.accentColorName: "blue",
-            Keys.panelOpacity: 0.95,
             Keys.showShortcutHints: true
         ])
         
@@ -89,36 +77,12 @@ class AppSettings: ObservableObject {
         self.showInDock = defaults.bool(forKey: Keys.showInDock)
         self.launchAtLogin = defaults.bool(forKey: Keys.launchAtLogin)
         self.showModeIndicator = defaults.bool(forKey: Keys.showModeIndicator)
-        self.accentColorName = defaults.string(forKey: Keys.accentColorName) ?? "blue"
-        self.panelOpacity = defaults.double(forKey: Keys.panelOpacity)
         self.showShortcutHints = defaults.bool(forKey: Keys.showShortcutHints)
     }
     
     // MARK: - Computed Properties
-    var accentColor: Color {
-        switch accentColorName {
-        case "blue": return .blue
-        case "purple": return .purple
-        case "pink": return .pink
-        case "red": return .red
-        case "orange": return .orange
-        case "yellow": return .yellow
-        case "green": return .green
-        case "teal": return .teal
-        default: return .accentColor
-        }
-    }
-    
-    static let availableColors = [
-        ("blue", Color.blue),
-        ("purple", Color.purple),
-        ("pink", Color.pink),
-        ("red", Color.red),
-        ("orange", Color.orange),
-        ("yellow", Color.yellow),
-        ("green", Color.green),
-        ("teal", Color.teal)
-    ]
+    // Accent color and available colors removed
+
     
     // MARK: - Actions
     private func updateDockVisibility() {
@@ -134,8 +98,6 @@ class AppSettings: ObservableObject {
         showInDock = false
         launchAtLogin = false
         showModeIndicator = true
-        accentColorName = "blue"
-        panelOpacity = 0.95
         showShortcutHints = true
     }
 }
@@ -255,34 +217,17 @@ struct SettingsView: View {
                 }
                 
                 SettingsSection(title: "Mode") {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Current Mode")
-                                .font(.system(size: 13, weight: .medium))
-                            Text(spaceManager.isYabaiMode ? "Using Yabai window manager" : "Using native macOS APIs")
-                                .font(.system(size: 11))
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Spacer()
-                        
-                        HStack(spacing: 6) {
-                            Circle()
-                                .fill(spaceManager.isYabaiMode ? Color.green : Color.orange)
-                                .frame(width: 8, height: 8)
-                            Text(spaceManager.isYabaiMode ? "Yabai" : "Native")
-                                .font(.system(size: 12, weight: .medium))
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(
-                            (spaceManager.isYabaiMode ? Color.green : Color.orange).opacity(0.15)
-                        )
-                        .clipShape(Capsule())
+                    SettingsRow(
+                        icon: "rectangle.split.3x1",
+                        title: "Window Manager",
+                        subtitle: spaceManager.isYabaiMode ? "Using Yabai" : "Using Native macOS APIs"
+                    ) {
+                        Toggle("", isOn: Binding(
+                            get: { spaceManager.isYabaiMode },
+                            set: { spaceManager.setMode(isYabai: $0) }
+                        ))
+                        .toggleStyle(SwitchToggleStyle(tint: .accentColor))
                     }
-                    .padding(12)
-                    .background(Color.primary.opacity(0.03))
-                    .cornerRadius(8)
                 }
             }
             .padding(24)
@@ -315,40 +260,7 @@ struct SettingsView: View {
                     }
                 }
                 
-                SettingsSection(title: "Accent Color") {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 8), spacing: 12) {
-                        ForEach(AppSettings.availableColors, id: \.0) { name, color in
-                            ColorButton(
-                                color: color,
-                                isSelected: settings.accentColorName == name
-                            ) {
-                                settings.accentColorName = name
-                            }
-                        }
-                    }
-                    .padding(12)
-                    .background(Color.primary.opacity(0.03))
-                    .cornerRadius(8)
-                }
-                
-                SettingsSection(title: "Panel Opacity") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("Transparency")
-                                .font(.system(size: 13, weight: .medium))
-                            Spacer()
-                            Text("\(Int(settings.panelOpacity * 100))%")
-                                .font(.system(size: 12, design: .monospaced))
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Slider(value: $settings.panelOpacity, in: 0.5...1.0, step: 0.05)
-                            .accentColor(.accentColor)
-                    }
-                    .padding(12)
-                    .background(Color.primary.opacity(0.03))
-                    .cornerRadius(8)
-                }
+                // Accent Color and Panel Opacity sections removed
                 
                 // Reset button
                 HStack {
