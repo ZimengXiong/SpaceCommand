@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0B68ECF762AE29A9F4A0EFE4 /* SpaceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 449629EBAEB4DDB5F0195482 /* SpaceService.swift */; };
+		3735F2F71C2E1D8BCFA200CA /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCE17FB1AC0802634A3F6DBA /* SettingsView.swift */; };
 		4325C2EAB774979A8DA9FA38 /* OmniBoxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B40366C1C9B24E5D036DC5E /* OmniBoxView.swift */; };
 		709F2AF671FB79FEB6C0A023 /* FloatingPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 834C429E736E60686FDE82D4 /* FloatingPanel.swift */; };
 		CDDE58801E041A4CC3EB1F18 /* YabaiAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8176516BC6E22EC9F1410ACB /* YabaiAdapter.swift */; };
@@ -27,6 +28,7 @@
 		834C429E736E60686FDE82D4 /* FloatingPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingPanel.swift; sourceTree = "<group>"; };
 		8AF649089CA3429D7A636147 /* NativeAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeAdapter.swift; sourceTree = "<group>"; };
 		A4AC51669A34EDC8D492F136 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
+		BCE17FB1AC0802634A3F6DBA /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		DFFDE9703E9150C55871268D /* SpaceCommand.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SpaceCommand.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		EEA8C2598CE71720AA3296FC /* PersistenceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceManager.swift; sourceTree = "<group>"; };
 		F786116FB0097E5D516DE9C0 /* Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Bridging-Header.h"; sourceTree = "<group>"; };
@@ -51,6 +53,7 @@
 				8AF649089CA3429D7A636147 /* NativeAdapter.swift */,
 				5B40366C1C9B24E5D036DC5E /* OmniBoxView.swift */,
 				EEA8C2598CE71720AA3296FC /* PersistenceManager.swift */,
+				BCE17FB1AC0802634A3F6DBA /* SettingsView.swift */,
 				64A5EC53556B59584F934D06 /* SpaceManager.swift */,
 				449629EBAEB4DDB5F0195482 /* SpaceService.swift */,
 				8176516BC6E22EC9F1410ACB /* YabaiAdapter.swift */,
@@ -125,6 +128,7 @@
 				D6D3D4590A37052EDB1DFBF9 /* NativeAdapter.swift in Sources */,
 				4325C2EAB774979A8DA9FA38 /* OmniBoxView.swift in Sources */,
 				E91C1BD3F89DE87E0083014E /* PersistenceManager.swift in Sources */,
+				3735F2F71C2E1D8BCFA200CA /* SettingsView.swift in Sources */,
 				F734D2E1666D5C2EBE30BB90 /* SpaceManager.swift in Sources */,
 				0B68ECF762AE29A9F4A0EFE4 /* SpaceService.swift in Sources */,
 				CDDE58801E041A4CC3EB1F18 /* YabaiAdapter.swift in Sources */,
