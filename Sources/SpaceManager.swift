@@ -3,6 +3,8 @@ import Combine
 
 /// Central manager for space operations, handles adapter selection
 class SpaceManager: ObservableObject {
+    static let shared = SpaceManager()
+    
     @Published var spaces: [Space] = []
     @Published var isYabaiMode: Bool = false
     
@@ -10,7 +12,20 @@ class SpaceManager: ObservableObject {
     private let persistenceManager = PersistenceManager()
     
     init() {
-        // Try Yabai first, fall back to Native
+        // Check user preference
+        let defaults = UserDefaults.standard
+        let preferredMode = defaults.string(forKey: "preferredMode")
+        
+        // If explicitly set to native, use native
+        if preferredMode == "native" {
+            self.adapter = NativeAdapter(persistenceManager: persistenceManager)
+            self.isYabaiMode = false
+            print("Using Native mode (User preference)")
+            refreshSpaces()
+            return
+        }
+        
+        // Otherwise try Yabai (default behavior)
         let yabai = YabaiAdapter()
         if yabai.isAvailable {
             self.adapter = yabai
@@ -25,6 +40,27 @@ class SpaceManager: ObservableObject {
         refreshSpaces()
     }
     
+    func setMode(isYabai: Bool) {
+        if isYabai {
+            let yabai = YabaiAdapter()
+            if yabai.isAvailable {
+                self.adapter = yabai
+                self.isYabaiMode = true
+            } else {
+                // Failed to switch
+                print("Cannot switch to Yabai: not available")
+                return
+            }
+        } else {
+            self.adapter = NativeAdapter(persistenceManager: persistenceManager)
+            self.isYabaiMode = false
+        }
+        
+        // Save preference
+        UserDefaults.standard.set(isYabai ? "yabai" : "native", forKey: "preferredMode")
+        refreshSpaces()
+    }
+    
     func refreshSpaces() {
         spaces = adapter.getSpaces()
     }
@@ -34,11 +70,10 @@ class SpaceManager: ObservableObject {
     }
     
     func renameSpace(space: Space, to name: String) {
-        print("SpaceManager: Renaming space \(space.index) to '\(name)'")
         adapter.renameSpace(space: space, to: name)
         
-        // Refresh to show updated name
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+        // Refresh to show updated name - give yabai a moment to process
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             self?.refreshSpaces()
         }
     }

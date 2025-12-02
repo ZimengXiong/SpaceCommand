@@ -7,25 +7,25 @@ struct SpaceCommandApp: App {
     
     var body: some Scene {
         Settings {
-            EmptyView()
+            SettingsView(spaceManager: SpaceManager.shared)
         }
     }
 }
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var floatingPanel: FloatingPanel?
-    private var settingsWindow: NSWindow?
+    // Settings window is now handled by SwiftUI
     private var hotkeyManager: HotkeyManager?
-    private var spaceManager: SpaceManager!
+    // spaceManager is now a singleton accessed via SpaceManager.shared
     private var statusItem: NSStatusItem?
     
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Initialize space manager with appropriate adapter
-        spaceManager = SpaceManager()
+        // Initialize space manager (singleton)
+        let spaceManager = SpaceManager.shared
         
         // Create and configure floating panel
         floatingPanel = FloatingPanel(spaceManager: spaceManager, onOpenSettings: { [weak self] in
-            self?.openSettings()
+            self?.openSettingsMenu()
         })
         
         // Setup global hotkey (Cmd+Shift+Space)
@@ -89,7 +89,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     @objc private func openSettingsMenu() {
-        openSettings()
+        // Use standard macOS selector to open settings
+        NSApp.sendAction(Selector("showSettingsWindow:"), to: nil, from: nil)
+        
+        // Also hide the panel if it's open
+        floatingPanel?.hidePanel()
+        NSApp.activate(ignoringOtherApps: true)
     }
     
     @objc private func quitApp() {
@@ -106,23 +111,5 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
     
-    private func openSettings() {
-        // Hide the main panel first
-        floatingPanel?.hidePanel()
-        
-        if settingsWindow == nil {
-            let settingsView = SettingsView(spaceManager: spaceManager)
-            let hostingController = NSHostingController(rootView: settingsView)
-            
-            settingsWindow = NSWindow(contentViewController: hostingController)
-            settingsWindow?.title = "SpaceCommand Settings"
-            settingsWindow?.styleMask = [.titled, .closable, .miniaturizable]
-            settingsWindow?.center()
-            settingsWindow?.setFrameAutosaveName("SettingsWindow")
-            settingsWindow?.isReleasedWhenClosed = false
-        }
-        
-        settingsWindow?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
-    }
+    // Manual settings window management removed in favor of SwiftUI Settings scene
 }
