@@ -4,14 +4,16 @@ import SwiftUI
 /// A floating, non-activating panel for the OmniBox interface
 class FloatingPanel: NSPanel {
     private let spaceManager: SpaceManager
+    private let onOpenSettings: () -> Void
     private var hostingView: NSHostingView<OmniBoxView>?
     
-    init(spaceManager: SpaceManager) {
+    init(spaceManager: SpaceManager, onOpenSettings: @escaping () -> Void) {
         self.spaceManager = spaceManager
+        self.onOpenSettings = onOpenSettings
         
         // Panel dimensions
-        let panelWidth: CGFloat = 600
-        let panelHeight: CGFloat = 400
+        let panelWidth: CGFloat = 560
+        let panelHeight: CGFloat = 380
         
         // Center on screen
         let screenFrame = NSScreen.main?.visibleFrame ?? .zero
@@ -22,7 +24,7 @@ class FloatingPanel: NSPanel {
         
         super.init(
             contentRect: contentRect,
-            styleMask: [.borderless, .nonactivatingPanel, .hudWindow],
+            styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
         )
@@ -37,7 +39,7 @@ class FloatingPanel: NSPanel {
         self.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
         self.isOpaque = false
         self.backgroundColor = .clear
-        self.hasShadow = true
+        self.hasShadow = false  // We use SwiftUI shadow instead
         self.isMovableByWindowBackground = false
         self.hidesOnDeactivate = false
         
@@ -51,6 +53,10 @@ class FloatingPanel: NSPanel {
             spaceManager: spaceManager,
             onDismiss: { [weak self] in
                 self?.hidePanel()
+            },
+            onOpenSettings: { [weak self] in
+                self?.hidePanel()
+                self?.onOpenSettings()
             }
         )
         
@@ -73,12 +79,12 @@ class FloatingPanel: NSPanel {
             self.setFrameOrigin(NSPoint(x: panelX, y: panelY))
         }
         
+        // Refresh content before showing
+        setupContent()
+        
         NSApp.activate(ignoringOtherApps: true)
         self.makeKeyAndOrderFront(nil)
         self.orderFrontRegardless()
-        
-        // Refresh content
-        setupContent()
     }
     
     func hidePanel() {

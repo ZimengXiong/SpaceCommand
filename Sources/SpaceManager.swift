@@ -33,9 +33,21 @@ class SpaceManager: ObservableObject {
         adapter.switchTo(space: space)
     }
     
+    func renameSpace(space: Space, to name: String) {
+        print("SpaceManager: Renaming space \(space.index) to '\(name)'")
+        adapter.renameSpace(space: space, to: name)
+        
+        // Refresh to show updated name
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+            self?.refreshSpaces()
+        }
+    }
+    
     func renameCurrentSpace(to name: String) {
-        guard let current = adapter.getCurrentSpace() else { return }
-        adapter.renameSpace(space: current, to: name)
-        refreshSpaces()
+        guard let current = adapter.getCurrentSpace() else { 
+            print("SpaceManager: No current space found")
+            return 
+        }
+        renameSpace(space: current, to: name)
     }
 }
