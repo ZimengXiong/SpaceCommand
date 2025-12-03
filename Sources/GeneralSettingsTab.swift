@@ -74,7 +74,6 @@ struct GeneralSettingsTab: View {
     }
 }
 
-/// Indicator showing backend availability and active status
 struct BackendStatusIndicator: View {
     let name: String
     let isAvailable: Bool

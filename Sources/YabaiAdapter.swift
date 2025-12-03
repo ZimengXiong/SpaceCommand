@@ -1,6 +1,5 @@
 import Foundation
 
-/// Yabai window manager adapter
 class YabaiAdapter: SpaceService {
     private let yabaiPath: String?
 
@@ -79,14 +78,11 @@ class YabaiAdapter: SpaceService {
         _ = shell("\(yabai) -m space \(space.index) --label \"\(escapedName)\"")
     }
 
-    // MARK: - Private Helpers
-
     private static func findYabai() -> String? {
-        // Common paths for yabai
         let paths = [
             "/usr/local/bin/yabai",
             "/opt/homebrew/bin/yabai",
-            "/run/current-system/sw/bin/yabai",  // NixOS
+            "/run/current-system/sw/bin/yabai",
         ]
 
         for path in paths {
@@ -138,8 +134,6 @@ class YabaiAdapter: SpaceService {
         }
     }
 }
-
-// MARK: - Yabai JSON Models
 
 private struct YabaiSpace: Codable {
     let id: Int

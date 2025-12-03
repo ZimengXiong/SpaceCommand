@@ -180,8 +180,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func setupSpaceNumberHotkeys() {
-        // Map number keys to space indices 11-20
-        // 1 = Space 11, 2 = Space 12, ..., 9 = Space 19, 0 = Space 20
         let numberKeyMappings: [UInt32: Int] = [
             UInt32(kVK_ANSI_1): 11,
             UInt32(kVK_ANSI_2): 12,
@@ -210,13 +208,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let spaceManager = SpaceManager.shared
 
-        // Check if we have any available backend
         if !spaceManager.hasAvailableBackend {
             logger.warning("SpaceManager: No backend available for space switching")
             return
         }
 
-        // Switch to the space by index
         spaceManager.switchToSpace(by: spaceIndex)
     }
 

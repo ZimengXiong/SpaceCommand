@@ -1,4 +1,4 @@
-import AppKit  // Import AppKit for NSEvent.ModifierFlags
+import AppKit
 import Carbon
 import Foundation
 
@@ -13,7 +13,6 @@ extension EventHotKeyID: Hashable {
     }
 }
 
-/// Manages global hotkey registration using Carbon Event Manager
 class HotkeyManager {
     private var hotkeyRefs: [EventHotKeyID: EventHotKeyRef] = [:]
     private var hotkeyHandlers: [EventHotKeyID: () -> Void] = [:]

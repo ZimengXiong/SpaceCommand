@@ -1,6 +1,5 @@
 import Foundation
 
-/// Space mode enum
 enum SpaceMode: String, Codable, CaseIterable {
     case auto = "auto"
     case yabai = "yabai"

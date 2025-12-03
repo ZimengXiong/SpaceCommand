@@ -1,6 +1,5 @@
 import Foundation
 
-/// Application error types
 enum SpaceCommandError: Error, LocalizedError {
     case yabaiNotFound
     case yabaiCommandFailed(String)
@@ -55,7 +54,6 @@ enum SpaceCommandError: Error, LocalizedError {
     }
 }
 
-/// Logging levels for different types of messages
 enum LogLevel: String, CaseIterable {
     case debug = "DEBUG"
     case info = "INFO"
@@ -64,7 +62,6 @@ enum LogLevel: String, CaseIterable {
 
 }
 
-/// Logging utility
 class Logger {
     static let shared = Logger()
 
@@ -82,7 +79,6 @@ class Logger {
         Swift.print(logMessage)
     }
 
-    // Convenience methods for different log levels
     func debug(
         _ message: String, file: String = #file, function: String = #function, line: Int = #line
     ) {
@@ -128,7 +124,6 @@ class Logger {
     }
 }
 
-// MARK: - Date Formatter Extension
 extension DateFormatter {
     static let currentTime: DateFormatter = {
         let formatter = DateFormatter()

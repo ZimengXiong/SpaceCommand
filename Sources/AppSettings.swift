@@ -5,7 +5,6 @@ import ServiceManagement
 import SwiftUI
 import UserNotifications
 
-/// User preferences stored in UserDefaults
 class AppSettings: ObservableObject {
     static let shared = AppSettings()
 
@@ -13,7 +12,6 @@ class AppSettings: ObservableObject {
     private let logger = Logger.shared
     private let notificationCenter = NotificationCenter.default
 
-    // MARK: - Keys
     private enum Keys {
         static let hotkeyEnabled = "hotkeyEnabled"
         static let showInDock = "showInDock"
@@ -24,7 +22,6 @@ class AppSettings: ObservableObject {
         static let spaceLabels = "spaceLabels"
     }
 
-    // MARK: - Published Properties with Initial Values
     @Published var hotkeyEnabled: Bool = true {
         didSet {
             defaults.set(hotkeyEnabled, forKey: Keys.hotkeyEnabled)
@@ -73,7 +70,6 @@ class AppSettings: ObservableObject {
         }
     }
 
-    // MARK: - Initialization
     init() {
         setupDefaultValues()
         loadSettings()
@@ -141,8 +137,9 @@ class AppSettings: ObservableObject {
     private func loadSpaceLabels() {
         if let labels = defaults.dictionary(forKey: Keys.spaceLabels) as? [String: String] {
             spaceLabels = labels
-        } else if let oldLabels = defaults.dictionary(forKey: "nativeSpaceNames") as? [String: String] {
-            // Migration from NativeAdapter storage
+        } else if let oldLabels = defaults.dictionary(forKey: "nativeSpaceNames")
+            as? [String: String]
+        {
             spaceLabels = oldLabels
             logger.info("Migrated labels from NativeAdapter storage")
         }
@@ -159,7 +156,6 @@ class AppSettings: ObservableObject {
             spaceLabels.removeValue(forKey: spaceId)
         }
     }
-
 
     private func initializeNotifications() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) {
@@ -186,7 +182,6 @@ class AppSettings: ObservableObject {
         notificationCenter.post(name: .hotkeyDidChange, object: customHotkey)
     }
 
-    // MARK: - Actions
     private func updateDockVisibility() {
         if showInDock {
             NSApp.setActivationPolicy(.regular)

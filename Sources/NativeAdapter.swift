@@ -3,7 +3,6 @@ import Foundation
 import Security
 import ServiceManagement
 
-/// Native macOS space management adapter
 class NativeAdapter: SpaceService {
     private let conn = _CGSDefaultConnection()
     private let defaults = UserDefaults.standard
@@ -287,8 +286,6 @@ class NativeAdapter: SpaceService {
             return
         }
 
-        // Switch spaces using CGEvent then AppleScript fallback
-
         let currentSpaceBefore = getCurrentSpace()
         logger.debug(
             "NativeAdapter: Current space before switch: \(currentSpaceBefore?.index ?? -1)")
@@ -353,10 +350,7 @@ class NativeAdapter: SpaceService {
         AppSettings.shared.setLabel(for: space.id, label: name)
     }
 
-    // MARK: - Private Methods
-
     private func simulateSpaceSwitchWithCGEvent(to index: Int) -> Bool {
-        // macOS key codes for number keys (these are NOT sequential!)
         let keyCodes: [Int: CGKeyCode] = [
             1: 18,
             2: 19,
@@ -425,9 +419,6 @@ class NativeAdapter: SpaceService {
     }
 
     private func switchViaAppleScript(spaceIndex: Int, isFullScreen: Bool) {
-        // Uses System Events to trigger Mission Control and select the space
-
-        // macOS key codes for number keys (these are NOT sequential!)
         let numberKeyCodes: [Int: Int] = [
             1: 18,
             2: 19,

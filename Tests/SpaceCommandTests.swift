@@ -63,8 +63,6 @@ final class FuzzyMatchTests: XCTestCase {
     }
 }
 
-// MARK: - Native Mode Space Switching Tests
-
 final class NativeModeSwitchingTests: XCTestCase {
 
     func testNativeAdapter_CanBeInitialized() {
@@ -151,8 +149,6 @@ final class NativeModeSwitchingTests: XCTestCase {
     }
 }
 
-// MARK: - Yabai Mode Space Switching Tests
-
 final class YabaiModeSwitchingTests: XCTestCase {
 
     func testYabaiAdapter_CanBeInitialized() {
@@ -225,8 +221,6 @@ final class YabaiModeSwitchingTests: XCTestCase {
     }
 }
 
-// MARK: - SpaceManager Integration Tests
-
 final class SpaceManagerIntegrationTests: XCTestCase {
 
     func testSpaceManager_InitializesWithAdapters() {
@@ -287,8 +281,6 @@ final class SpaceManagerIntegrationTests: XCTestCase {
         waitForExpectations(timeout: 2.0)
     }
 }
-
-// MARK: - Debug Test Utility
 
 final class DebugSpaceSwitchingTests: XCTestCase {
 

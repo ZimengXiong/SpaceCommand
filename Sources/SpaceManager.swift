@@ -2,7 +2,6 @@ import AppKit
 import Combine
 import Foundation
 
-/// Central manager for space operations
 class SpaceManager: ObservableObject {
     static let shared = SpaceManager()
 
@@ -27,7 +26,6 @@ class SpaceManager: ObservableObject {
         self.isYabaiAvailable = yabaiAdapter.isAvailable
         self.isNativeAvailable = nativeAdapter.isAvailable
 
-        // Sync labels from Yabai if available (this populates AppSettings with Yabai labels if missing)
         if isYabaiAvailable {
             _ = yabaiAdapter.getSpaces()
         }

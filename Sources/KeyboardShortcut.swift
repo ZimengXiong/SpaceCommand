@@ -1,6 +1,5 @@
 import Foundation
 
-/// Keyboard shortcut model
 struct KeyboardShortcut: Codable, Equatable {
     var key: UInt32
     var modifiers: [String]  // "cmd", "shift", "option", "control"
@@ -19,20 +18,20 @@ struct KeyboardShortcut: Codable, Equatable {
 
     private func keyToString() -> String {
         switch key {
-        case 49: return "Space"  // Space bar
-        case 36: return "Return"  // Return
-        case 48: return "Tab"  // Tab
-        case 51: return "Delete"  // Delete
-        case 117: return "⌦"  // Forward Delete
-        case 53: return "Esc"  // Escape
-        case 123: return "←"  // Left Arrow
-        case 124: return "→"  // Right Arrow
-        case 126: return "↑"  // Up Arrow
-        case 125: return "↓"  // Down Arrow
-        case 115: return "Home"  // Home
-        case 119: return "End"  // End
-        case 116: return "PgUp"  // Page Up
-        case 121: return "PgDn"  // Page Down
+        case 49: return "Space"
+        case 36: return "Return"
+        case 48: return "Tab"
+        case 51: return "Delete"
+        case 117: return "⌦"
+        case 53: return "Esc"
+        case 123: return "←"
+        case 124: return "→"
+        case 126: return "↑"
+        case 125: return "↓"
+        case 115: return "Home"
+        case 119: return "End"
+        case 116: return "PgUp"
+        case 121: return "PgDn"
 
         case 122: return "F1"
         case 120: return "F2"
@@ -108,10 +107,8 @@ struct KeyboardShortcut: Codable, Equatable {
         }
     }
 
-    /// Initialize with default Cmd+Shift+Space hotkey
     static let cmdShiftSpace = KeyboardShortcut(key: UInt32(49), modifiers: ["cmd", "shift"])
 
-    /// Initialize with key and modifiers
     init(key: UInt32, modifiers: [String]) {
         self.key = key
         self.modifiers = modifiers

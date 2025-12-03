@@ -1,6 +1,5 @@
 import Foundation
 
-/// Virtual desktop/space model
 struct Space: Identifiable, Equatable {
     let id: String
     let index: Int
@@ -34,7 +33,6 @@ struct Space: Identifiable, Equatable {
     }
 }
 
-/// Space management operations protocol
 protocol SpaceService {
     func getSpaces() -> [Space]
     func getCurrentSpace() -> Space?

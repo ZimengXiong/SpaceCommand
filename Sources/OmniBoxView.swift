@@ -55,26 +55,27 @@ struct OmniBoxView: View {
     }
 
     var body: some View {
-        mainContent
-            .frame(width: 520, height: 360)
-            .background(
-                ZStack {
-                    VisualEffectView(material: .hudWindow, blendingMode: .behindWindow)
-                    Color.black.opacity(0.7)
-                }
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.15), lineWidth: 1)
-            )
-            .shadow(color: Color.black.opacity(0.6), radius: 30, x: 0, y: 15)
-            .onAppear(perform: handleAppear)
-            .onDisappear(perform: handleDisappear)
-            .onChange(of: searchText) {
-                selectedIndex = 0
-            }
-            .environment(\.colorScheme, .dark)
+        ZStack {
+            mainContent
+                .frame(width: 520, height: 360)
+                .background(
+                    ZStack {
+                        VisualEffectView(material: .hudWindow, blendingMode: .behindWindow)
+                        Color.black.opacity(0.7)
+                    }
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.15), lineWidth: 0.5)
+                )
+        }
+        .onAppear(perform: handleAppear)
+        .onDisappear(perform: handleDisappear)
+        .onChange(of: searchText) {
+            selectedIndex = 0
+        }
+        .environment(\.colorScheme, .dark)
     }
 
     @ViewBuilder
@@ -139,7 +140,6 @@ struct OmniBoxView: View {
 
         let displayName = rawName.hasPrefix("None") ? "Offline" : rawName
 
-        // Color green when an active backend is available, otherwise red
         let modeColor: Color =
             (spaceManager.hasAvailableBackend && !rawName.hasPrefix("None"))
             ? Color.green : Color.red
@@ -263,16 +263,16 @@ struct OmniBoxView: View {
 
     private func handleKeyEvent(_ event: NSEvent) -> NSEvent? {
         switch event.keyCode {
-        case 53:  // Escape
+        case 53:
             onDismiss()
             return nil
-        case 125:  // Down arrow
+        case 125:
             moveSelection(by: 1)
             return nil
-        case 126:  // Up arrow
+        case 126:
             moveSelection(by: -1)
             return nil
-        case 36:  // Return/Enter
+        case 36:
             if event.modifierFlags.contains(.command) {
                 performRename()
                 return nil
@@ -319,17 +319,14 @@ struct OmniBoxView: View {
             "OmniBoxView: handleSubmit - switching to space \(targetSpace.index) (id: \(targetSpace.id), isCurrent: \(targetSpace.isCurrent))"
         )
 
-        // Don't switch if already on the target space
         if targetSpace.isCurrent {
             logger.debug("OmniBoxView: Already on target space, just dismissing")
             onDismiss()
             return
         }
 
-        // Dismiss panel before switching to avoid capturing events
         onDismiss()
 
-        // Small delay to let the panel fully hide before triggering space switch
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             self.spaceManager.switchTo(space: targetSpace)
         }

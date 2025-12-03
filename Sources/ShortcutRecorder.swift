@@ -35,7 +35,6 @@ struct ShortcutRecorderButton: View {
     }
 }
 
-// MARK: - NSView wrapper for keyboard event capture
 struct ShortcutRecorderView: NSViewRepresentable {
     @Binding var isRecording: Bool
     @Binding var shortcut: KeyboardShortcut
