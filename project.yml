@@ -17,6 +17,9 @@ targets:
         ENABLE_USER_SCRIPT_SANDBOXING: NO
         CODE_SIGN_ENTITLEMENTS: Resources/SpaceCommand.entitlements
         CODE_SIGN_IDENTITY: "-"
-        OTHER_LDFLAGS: ["-framework", "Carbon"]
+        # Bridging header for native macOS Private APIs
+        SWIFT_OBJC_BRIDGING_HEADER: Sources/Bridging-Header.h
+        # Link frameworks: Carbon for hotkeys, CoreGraphics for private space APIs
+        OTHER_LDFLAGS: ["-framework", "Carbon", "-framework", "CoreGraphics"]
         PRODUCT_BUNDLE_IDENTIFIER: com.SpaceCommand.SpaceCommand
         MACOSX_DEPLOYMENT_TARGET: "14.0"

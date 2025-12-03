@@ -148,6 +148,7 @@ class AppSettings: ObservableObject {
         static let showInDock = "showInDock"
         static let launchAtLogin = "launchAtLogin"
         static let customHotkey = "customHotkey"
+        static let spaceMode = "spaceMode"
     }
 
     // MARK: - General Settings
@@ -176,6 +177,12 @@ class AppSettings: ObservableObject {
         }
     }
 
+    @Published var spaceMode: SpaceMode {
+        didSet {
+            defaults.set(spaceMode.rawValue, forKey: Keys.spaceMode)
+        }
+    }
+
     // MARK: - Initialization
     init() {
         let defaultHotkey = KeyboardShortcut(key: UInt32(kVK_Space), modifiers: ["cmd", "shift"])
@@ -184,6 +191,7 @@ class AppSettings: ObservableObject {
             Keys.hotkeyEnabled: true,
             Keys.showInDock: false,
             Keys.launchAtLogin: false,
+            Keys.spaceMode: SpaceMode.auto.rawValue,
         ])
 
         self.hotkeyEnabled = defaults.bool(forKey: Keys.hotkeyEnabled)
@@ -196,6 +204,15 @@ class AppSettings: ObservableObject {
             self.customHotkey = decoded
         } else {
             self.customHotkey = defaultHotkey
+        }
+
+        // Load space mode
+        if let modeString = defaults.string(forKey: Keys.spaceMode),
+            let mode = SpaceMode(rawValue: modeString)
+        {
+            self.spaceMode = mode
+        } else {
+            self.spaceMode = .auto
         }
     }
 
@@ -213,6 +230,7 @@ class AppSettings: ObservableObject {
         showInDock = false
         launchAtLogin = false
         customHotkey = KeyboardShortcut(key: UInt32(kVK_Space), modifiers: ["cmd", "shift"])
+        spaceMode = .auto
     }
 }
 
@@ -237,6 +255,7 @@ struct SettingsView: View {
 // MARK: - General Settings Tab
 struct GeneralSettingsTab: View {
     @ObservedObject var settings = AppSettings.shared
+    @ObservedObject var spaceManager = SpaceManager.shared
     @State private var isRecordingHotkey = false
 
     var body: some View {
@@ -254,6 +273,67 @@ struct GeneralSettingsTab: View {
                 Toggle("Enable Global Hotkey", isOn: $settings.hotkeyEnabled)
             } header: {
                 Text("Activation")
+            }
+
+            Section {
+                Picker("Space Backend", selection: $settings.spaceMode) {
+                    ForEach(SpaceMode.allCases, id: \.self) { mode in
+                        HStack {
+                            Text(mode.displayName)
+                            if mode == .yabai && !spaceManager.isYabaiAvailable {
+                                Text("(unavailable)")
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .tag(mode)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                // Status indicators
+                HStack {
+                    Text("Active Backend:")
+                    Spacer()
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(spaceManager.hasAvailableBackend ? Color.green : Color.red)
+                            .frame(width: 8, height: 8)
+                        Text(spaceManager.activeAdapterName)
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                HStack {
+                    Text("Yabai Status:")
+                    Spacer()
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(spaceManager.isYabaiAvailable ? Color.green : Color.orange)
+                            .frame(width: 8, height: 8)
+                        Text(spaceManager.isYabaiAvailable ? "Available" : "Not Found")
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                HStack {
+                    Text("Native Mode:")
+                    Spacer()
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(spaceManager.isNativeAvailable ? Color.green : Color.red)
+                            .frame(width: 8, height: 8)
+                        Text(spaceManager.isNativeAvailable ? "Available" : "Unavailable")
+                            .foregroundColor(.secondary)
+                    }
+                }
+            } header: {
+                Text("Space Backend")
+            } footer: {
+                Text(
+                    "Auto mode uses Yabai if available, otherwise falls back to native macOS APIs. Native mode requires Accessibility permissions for space switching."
+                )
+                .font(.caption)
+                .foregroundColor(.secondary)
             }
 
             Section {

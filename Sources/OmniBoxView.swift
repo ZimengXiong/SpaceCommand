@@ -296,10 +296,25 @@ struct OmniBoxView: View {
             return
         }
 
-        guard !filtered.isEmpty else { return }
-        guard selectedIndex >= 0 && selectedIndex < filtered.count else { return }
+        guard !filtered.isEmpty else {
+            print("OmniBoxView: handleSubmit - no filtered spaces")
+            return
+        }
+        guard selectedIndex >= 0 && selectedIndex < filtered.count else {
+            print("OmniBoxView: handleSubmit - invalid selectedIndex \(selectedIndex)")
+            return
+        }
 
         let targetSpace = filtered[selectedIndex]
+        print("OmniBoxView: handleSubmit - switching to space \(targetSpace.index) (id: \(targetSpace.id), isCurrent: \(targetSpace.isCurrent))")
+        
+        // Don't switch if already on the target space
+        if targetSpace.isCurrent {
+            print("OmniBoxView: Already on target space, just dismissing")
+            onDismiss()
+            return
+        }
+        
         spaceManager.switchTo(space: targetSpace)
         onDismiss()
     }
