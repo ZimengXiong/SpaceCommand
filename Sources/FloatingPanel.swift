@@ -66,6 +66,10 @@ class FloatingPanel: NSPanel {
         hostingView.frame = self.contentView?.bounds ?? .zero
         hostingView.autoresizingMask = NSView.AutoresizingMask([.width, .height])
 
+        // Ensure shadow is not clipped by disabling bounds masking
+        hostingView.wantsLayer = true
+        hostingView.layer?.masksToBounds = false
+
         self.contentView = hostingView
         self.hostingView = hostingView
     }
