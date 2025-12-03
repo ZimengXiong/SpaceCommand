@@ -29,9 +29,9 @@ struct OmniBoxView: View {
     var body: some View {
         mainContent
             .frame(width: 560, height: 380)
-            .background(backgroundView)
+            .liquidGlass()
             .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .overlay(borderOverlay)
+            .glassBorder(cornerRadius: 20)
             .shadow(color: Color.black.opacity(0.4), radius: 30, x: 0, y: 15)
             .onAppear(perform: handleAppear)
             .onDisappear(perform: handleDisappear)
@@ -123,8 +123,8 @@ struct OmniBoxView: View {
 
     @ViewBuilder
     private var modeIndicator: some View {
-        let modeText = spaceManager.isYabaiMode ? "yabai" : "native"
-        let modeColor = spaceManager.isYabaiMode ? Color.green : Color.orange
+        let modeText = spaceManager.isYabaiAvailable ? "yabai" : "offline"
+        let modeColor = spaceManager.isYabaiAvailable ? Color.green : Color.red
 
         HStack(spacing: 4) {
             Circle()
@@ -223,22 +223,6 @@ struct OmniBoxView: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
         .background(Color(nsColor: NSColor.controlBackgroundColor).opacity(0.5))
-    }
-
-    @ViewBuilder
-    private var borderOverlay: some View {
-        RoundedRectangle(cornerRadius: 20, style: .continuous)
-            .strokeBorder(
-                LinearGradient(
-                    colors: [
-                        Color.white.opacity(0.2),
-                        Color.white.opacity(0.05),
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                ),
-                lineWidth: 1
-            )
     }
 
     private func handleAppear() {
@@ -547,21 +531,4 @@ struct HelpItem: View {
     }
 }
 
-struct VisualEffectView: NSViewRepresentable {
-    let material: NSVisualEffectView.Material
-    let blendingMode: NSVisualEffectView.BlendingMode
-
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let view = NSVisualEffectView()
-        view.material = material
-        view.blendingMode = blendingMode
-        view.state = .active
-        view.wantsLayer = true
-        return view
-    }
-
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
-        nsView.material = material
-        nsView.blendingMode = blendingMode
-    }
-}
+// VisualEffectView is provided in VisualEffectView.swift; duplicate removed.

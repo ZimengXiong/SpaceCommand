@@ -5,7 +5,7 @@ struct AppInfo {
     static let version = "1.0.0"
     static let build = "1"
     static let name = "SpaceCommand"
-    static let bundleId = "com.SpaceCommand.SpaceCommand"
+    static let bundleId = "com.ZimengXiong.SpaceCommand"
     
     static var fullVersion: String {
         "\(version) (\(build))"
@@ -32,7 +32,6 @@ class AppSettings: ObservableObject {
         static let hotkeyEnabled = "hotkeyEnabled"
         static let showInDock = "showInDock"
         static let launchAtLogin = "launchAtLogin"
-        static let showModeIndicator = "showModeIndicator"
         static let showShortcutHints = "showShortcutHints"
     }
     
@@ -53,10 +52,6 @@ class AppSettings: ObservableObject {
     }
     
     // MARK: - Appearance Settings
-    @Published var showModeIndicator: Bool {
-        didSet { defaults.set(showModeIndicator, forKey: Keys.showModeIndicator) }
-    }
-    
     @Published var showShortcutHints: Bool {
         didSet { defaults.set(showShortcutHints, forKey: Keys.showShortcutHints) }
     }
@@ -68,7 +63,6 @@ class AppSettings: ObservableObject {
             Keys.hotkeyEnabled: true,
             Keys.showInDock: false,
             Keys.launchAtLogin: false,
-            Keys.showModeIndicator: true,
             Keys.showShortcutHints: true
         ])
         
@@ -76,7 +70,6 @@ class AppSettings: ObservableObject {
         self.hotkeyEnabled = defaults.bool(forKey: Keys.hotkeyEnabled)
         self.showInDock = defaults.bool(forKey: Keys.showInDock)
         self.launchAtLogin = defaults.bool(forKey: Keys.launchAtLogin)
-        self.showModeIndicator = defaults.bool(forKey: Keys.showModeIndicator)
         self.showShortcutHints = defaults.bool(forKey: Keys.showShortcutHints)
     }
     
@@ -97,7 +90,6 @@ class AppSettings: ObservableObject {
         hotkeyEnabled = true
         showInDock = false
         launchAtLogin = false
-        showModeIndicator = true
         showShortcutHints = true
     }
 }
@@ -136,7 +128,7 @@ struct SettingsView: View {
             .tabViewStyle(.automatic)
         }
         .frame(width: 480, height: 420)
-        .background(VisualEffectView(material: .windowBackground, blendingMode: .behindWindow))
+        .liquidGlass()
     }
     
     @ViewBuilder
@@ -216,17 +208,15 @@ struct SettingsView: View {
                     }
                 }
                 
-                SettingsSection(title: "Mode") {
+                SettingsSection(title: "Yabai") {
                     SettingsRow(
                         icon: "rectangle.split.3x1",
-                        title: "Window Manager",
-                        subtitle: spaceManager.isYabaiMode ? "Using Yabai" : "Using Native macOS APIs"
+                        title: "Yabai",
+                        subtitle: spaceManager.isYabaiAvailable ? "Connected" : "Not available - please install yabai"
                     ) {
-                        Toggle("", isOn: Binding(
-                            get: { spaceManager.isYabaiMode },
-                            set: { spaceManager.setMode(isYabai: $0) }
-                        ))
-                        .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+                        Circle()
+                            .fill(spaceManager.isYabaiAvailable ? Color.green : Color.red)
+                            .frame(width: 10, height: 10)
                     }
                 }
             }
@@ -239,14 +229,7 @@ struct SettingsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 SettingsSection(title: "Interface") {
-                    SettingsRow(
-                        icon: "tag",
-                        title: "Mode Indicator",
-                        subtitle: "Show yabai/native badge"
-                    ) {
-                        Toggle("", isOn: $settings.showModeIndicator)
-                            .toggleStyle(SwitchToggleStyle(tint: .accentColor))
-                    }
+                    // Removed Mode Indicator toggle - only yabai is supported
                     
                     Divider().padding(.leading, 44)
                     

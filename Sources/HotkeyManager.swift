@@ -1,31 +1,30 @@
 import Carbon
 import Foundation
+import AppKit // Import AppKit for NSEvent.ModifierFlags
+
+// Make EventHotKeyID Hashable and Equatable
+extension EventHotKeyID: Hashable, Equatable {
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(signature)
+        hasher.combine(id)
+    }
+
+    public static func == (lhs: EventHotKeyID, rhs: EventHotKeyID) -> Bool {
+        return lhs.signature == rhs.signature && lhs.id == rhs.id
+    }
+}
 
 /// Manages global hotkey registration using Carbon Event Manager
 class HotkeyManager {
-    private var hotkeyRef: EventHotKeyRef?
-    private let action: () -> Void
+    private var hotkeyRefs: [EventHotKeyID: EventHotKeyRef] = [:]
+    private var hotkeyHandlers: [EventHotKeyID: () -> Void] = [:]
+    private var nextHotKeyID: UInt32 = 1
     
-    // Unique ID for this hotkey
-    private let hotkeyID = EventHotKeyID(signature: OSType(0x5343_4D44), id: 1)  // "SCMD"
-    
-    init(action: @escaping () -> Void) {
-        self.action = action
-    }
-    
-    deinit {
-        unregister()
-    }
-    
-    /// Register Cmd+Shift+Space hotkey
-    func register() {
-        // Store reference to self for the callback
+    init() {
+        // Install event handler for all hotkeys managed by this manager
         let refcon = UnsafeMutableRawPointer(Unmanaged.passRetained(self).toOpaque())
-        
-        // Define event type spec
         var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
         
-        // Install event handler
         var eventHandler: EventHandlerRef?
         let status = InstallEventHandler(
             GetApplicationEventTarget(),
@@ -33,14 +32,13 @@ class HotkeyManager {
                 guard let userData = userData else { return OSStatus(eventNotHandledErr) }
                 let manager = Unmanaged<HotkeyManager>.fromOpaque(userData).takeUnretainedValue()
                 
-                // Verify it's our hotkey
                 var hotkeyID = EventHotKeyID()
                 GetEventParameter(event, EventParamName(kEventParamDirectObject), EventParamType(typeEventHotKeyID),
                                   nil, MemoryLayout<EventHotKeyID>.size, nil, &hotkeyID)
                 
-                if hotkeyID.signature == manager.hotkeyID.signature && hotkeyID.id == manager.hotkeyID.id {
+                if let handler = manager.hotkeyHandlers[hotkeyID] {
                     DispatchQueue.main.async {
-                        manager.action()
+                        handler()
                     }
                 }
                 
@@ -54,16 +52,22 @@ class HotkeyManager {
         
         if status != noErr {
             print("Failed to install event handler: \(status)")
-            return
         }
-        
-        // Register the hotkey: Cmd+Shift+Space
-        // Key codes: Space = 0x31
-        // Modifiers: cmdKey = 0x0100, shiftKey = 0x0200
-        var hotkeyID = self.hotkeyID
+    }
+    
+    deinit {
+        unregisterAll()
+    }
+    
+    /// Register a custom hotkey
+    func register(key: UInt32, modifierFlags: NSEvent.ModifierFlags, handler: @escaping () -> Void) {
+        let hotkeyID = EventHotKeyID(signature: OSType(0x5343_4D44), id: nextHotKeyID)
+        nextHotKeyID += 1
+
+        var hotkeyRef: EventHotKeyRef?
         let registerStatus = RegisterEventHotKey(
-            UInt32(kVK_Space),
-            UInt32(cmdKey | shiftKey),
+            key,
+            UInt32(modifierFlags.rawValue),
             hotkeyID,
             GetApplicationEventTarget(),
             0,
@@ -71,17 +75,25 @@ class HotkeyManager {
         )
         
         if registerStatus != noErr {
-            print("Failed to register hotkey: \(registerStatus)")
-        } else {
-            print("Global hotkey registered: Cmd+Shift+Space")
+            print("Failed to register hotkey (Key: \(key), Modifiers: \(modifierFlags.rawValue)): \(registerStatus)")
+        } else if let ref = hotkeyRef {
+            hotkeyRefs[hotkeyID] = ref
+            hotkeyHandlers[hotkeyID] = handler
+            print("Global hotkey registered: Key \(key), Modifiers \(modifierFlags.rawValue)")
         }
     }
     
-    /// Unregister the hotkey
-    func unregister() {
-        if let ref = hotkeyRef {
+    /// Register the default Cmd+Shift+Space hotkey
+    func registerDefaultHotkey(handler: @escaping () -> Void) {
+        register(key: UInt32(kVK_Space), modifierFlags: [.command, .shift], handler: handler)
+    }
+    
+    /// Unregister all hotkeys
+    func unregisterAll() {
+        for (_, ref) in hotkeyRefs {
             UnregisterEventHotKey(ref)
-            hotkeyRef = nil
         }
+        hotkeyRefs.removeAll()
+        hotkeyHandlers.removeAll()
     }
 }

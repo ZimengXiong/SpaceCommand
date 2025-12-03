@@ -1,67 +1,28 @@
 import Foundation
 import Combine
 
-/// Central manager for space operations, handles adapter selection
+/// Central manager for space operations — only Yabai is supported now
 class SpaceManager: ObservableObject {
     static let shared = SpaceManager()
-    
+
     @Published var spaces: [Space] = []
-    @Published var isYabaiMode: Bool = false
-    
-    private var adapter: SpaceService
-    private let persistenceManager = PersistenceManager()
-    
+    @Published var isYabaiAvailable: Bool = false
+
+    private let adapter: YabaiAdapter
+
     init() {
-        // Check user preference
-        let defaults = UserDefaults.standard
-        let preferredMode = defaults.string(forKey: "preferredMode")
-        
-        // If explicitly set to native, use native
-        if preferredMode == "native" {
-            self.adapter = NativeAdapter(persistenceManager: persistenceManager)
-            self.isYabaiMode = false
-            print("Using Native mode (User preference)")
-            refreshSpaces()
-            return
-        }
-        
-        // Otherwise try Yabai (default behavior)
-        let yabai = YabaiAdapter()
-        if yabai.isAvailable {
-            self.adapter = yabai
-            self.isYabaiMode = true
-            print("Using Yabai mode")
+        self.adapter = YabaiAdapter()
+        self.isYabaiAvailable = adapter.isAvailable
+        if isYabaiAvailable {
+            print("SpaceCommand initialized with Yabai adapter")
         } else {
-            self.adapter = NativeAdapter(persistenceManager: persistenceManager)
-            self.isYabaiMode = false
-            print("Using Native mode (Yabai not available)")
+            print("SpaceCommand: yabai not available; please install yabai to use this app")
         }
-        
         refreshSpaces()
     }
-    
-    func setMode(isYabai: Bool) {
-        if isYabai {
-            let yabai = YabaiAdapter()
-            if yabai.isAvailable {
-                self.adapter = yabai
-                self.isYabaiMode = true
-            } else {
-                // Failed to switch
-                print("Cannot switch to Yabai: not available")
-                return
-            }
-        } else {
-            self.adapter = NativeAdapter(persistenceManager: persistenceManager)
-            self.isYabaiMode = false
-        }
-        
-        // Save preference
-        UserDefaults.standard.set(isYabai ? "yabai" : "native", forKey: "preferredMode")
-        refreshSpaces()
-    }
-    
+
     func refreshSpaces() {
+        isYabaiAvailable = adapter.isAvailable
         spaces = adapter.getSpaces()
     }
     
