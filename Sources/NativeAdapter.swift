@@ -7,7 +7,6 @@ import ServiceManagement
 class NativeAdapter: SpaceService {
     private let conn = _CGSDefaultConnection()
     private let defaults = UserDefaults.standard
-    private let spaceNamesKey = "nativeSpaceNames"
     private let permissionsCheckedKey = "permissionsInitiallyChecked"
     private var hasAccessibilityPermission: Bool = false
     private var hasAppleEventsPermission: Bool = false
@@ -211,7 +210,6 @@ class NativeAdapter: SpaceService {
 
         var allSpaces: [Space] = []
         var spaceIndex = 0
-        let savedNames = loadSpaceNames()
 
         for display in displays {
             guard let currentSpace = display["Current Space"] as? [String: Any],
@@ -236,7 +234,7 @@ class NativeAdapter: SpaceService {
 
                 spaceIndex += 1
 
-                var label: String? = savedNames[spaceIDString]
+                var label: String? = AppSettings.shared.getLabel(for: spaceIDString)
 
                 if label == nil && isFullScreen {
                     if let pid = spaceDict["pid"] as? pid_t,
@@ -352,28 +350,10 @@ class NativeAdapter: SpaceService {
     }
 
     func renameSpace(space: Space, to name: String) {
-        // Store names in UserDefaults - macOS doesn't support direct renaming
-        var savedNames = loadSpaceNames()
-        savedNames[space.id] = name.isEmpty ? nil : name
-        saveSpaceNames(savedNames)
+        AppSettings.shared.setLabel(for: space.id, label: name)
     }
 
     // MARK: - Private Methods
-
-    private func loadSpaceNames() -> [String: String] {
-        guard let data = defaults.data(forKey: spaceNamesKey),
-            let names = try? JSONDecoder().decode([String: String].self, from: data)
-        else {
-            return [:]
-        }
-        return names
-    }
-
-    private func saveSpaceNames(_ names: [String: String]) {
-        if let data = try? JSONEncoder().encode(names) {
-            defaults.set(data, forKey: spaceNamesKey)
-        }
-    }
 
     private func simulateSpaceSwitchWithCGEvent(to index: Int) -> Bool {
         // macOS key codes for number keys (these are NOT sequential!)

@@ -21,6 +21,7 @@ class AppSettings: ObservableObject {
         static let launchAtLogin = "launchAtLogin"
         static let customHotkey = "customHotkey"
         static let spaceMode = "spaceMode"
+        static let spaceLabels = "spaceLabels"
     }
 
     // MARK: - Published Properties with Initial Values
@@ -28,6 +29,12 @@ class AppSettings: ObservableObject {
         didSet {
             defaults.set(hotkeyEnabled, forKey: Keys.hotkeyEnabled)
             logger.debug("Hotkey enabled changed to: \(hotkeyEnabled)")
+        }
+    }
+
+    @Published var spaceLabels: [String: String] = [:] {
+        didSet {
+            defaults.set(spaceLabels, forKey: Keys.spaceLabels)
         }
     }
 
@@ -106,6 +113,7 @@ class AppSettings: ObservableObject {
         launchAtLogin = defaults.bool(forKey: Keys.launchAtLogin)
         loadCustomHotkey()
         loadSpaceMode()
+        loadSpaceLabels()
     }
 
     private func loadCustomHotkey() {
@@ -129,6 +137,29 @@ class AppSettings: ObservableObject {
             logger.warning("Failed to load space mode, using default (.auto)")
         }
     }
+
+    private func loadSpaceLabels() {
+        if let labels = defaults.dictionary(forKey: Keys.spaceLabels) as? [String: String] {
+            spaceLabels = labels
+        } else if let oldLabels = defaults.dictionary(forKey: "nativeSpaceNames") as? [String: String] {
+            // Migration from NativeAdapter storage
+            spaceLabels = oldLabels
+            logger.info("Migrated labels from NativeAdapter storage")
+        }
+    }
+
+    func getLabel(for spaceId: String) -> String? {
+        return spaceLabels[spaceId]
+    }
+
+    func setLabel(for spaceId: String, label: String?) {
+        if let label = label, !label.isEmpty {
+            spaceLabels[spaceId] = label
+        } else {
+            spaceLabels.removeValue(forKey: spaceId)
+        }
+    }
+
 
     private func initializeNotifications() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) {

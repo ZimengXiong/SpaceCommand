@@ -57,18 +57,24 @@ struct OmniBoxView: View {
     var body: some View {
         mainContent
             .frame(width: 520, height: 360)
-            .background(Color(nsColor: NSColor.windowBackgroundColor).opacity(0.95))
+            .background(
+                ZStack {
+                    VisualEffectView(material: .hudWindow, blendingMode: .behindWindow)
+                    Color.black.opacity(0.7)
+                }
+            )
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .strokeBorder(Color.primary.opacity(0.15), lineWidth: 1)
+                    .strokeBorder(Color.white.opacity(0.15), lineWidth: 1)
             )
-            .shadow(color: Color.black.opacity(0.35), radius: 20, x: 0, y: 10)
+            .shadow(color: Color.black.opacity(0.6), radius: 30, x: 0, y: 15)
             .onAppear(perform: handleAppear)
             .onDisappear(perform: handleDisappear)
             .onChange(of: searchText) {
                 selectedIndex = 0
             }
+            .environment(\.colorScheme, .dark)
     }
 
     @ViewBuilder
@@ -108,7 +114,7 @@ struct OmniBoxView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
-        .background(Color(nsColor: NSColor.controlBackgroundColor).opacity(0.6))
+        .background(Color.black.opacity(0.3))
     }
 
     @ViewBuilder
@@ -234,7 +240,7 @@ struct OmniBoxView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(Color(nsColor: NSColor.controlBackgroundColor).opacity(0.4))
+        .background(Color.black.opacity(0.2))
     }
 
     private func handleAppear() {
@@ -377,9 +383,6 @@ struct SpaceRow: View {
             spaceIcon
             spaceInfo
             Spacer()
-            if isCurrent {
-                currentBadge
-            }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)

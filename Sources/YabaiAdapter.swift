@@ -30,10 +30,20 @@ class YabaiAdapter: SpaceService {
             let decoder = JSONDecoder()
             let yabaiSpaces = try decoder.decode([YabaiSpace].self, from: data)
             return yabaiSpaces.map { ySpace in
-                Space(
-                    id: "\(ySpace.id)",
+                let spaceId = String(ySpace.id)
+                var finalLabel = AppSettings.shared.getLabel(for: spaceId)
+
+                if finalLabel == nil && !ySpace.label.isEmpty {
+                    finalLabel = ySpace.label
+                    DispatchQueue.main.async {
+                        AppSettings.shared.setLabel(for: spaceId, label: ySpace.label)
+                    }
+                }
+
+                return Space(
+                    id: spaceId,
                     index: ySpace.index,
-                    label: ySpace.label.isEmpty ? nil : ySpace.label,
+                    label: finalLabel,
                     isCurrent: ySpace.hasFocus,
                     uuid: ySpace.uuid
                 )
@@ -61,6 +71,8 @@ class YabaiAdapter: SpaceService {
     }
 
     func renameSpace(space: Space, to name: String) {
+        AppSettings.shared.setLabel(for: space.id, label: name)
+
         guard let yabai = yabaiPath else { return }
 
         let escapedName = name.replacingOccurrences(of: "\"", with: "\\\"")
