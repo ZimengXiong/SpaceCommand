@@ -192,15 +192,11 @@ class NativeAdapter: SpaceService {
     }
 
     func switchTo(space: Space) {
-        print(
-            "NativeAdapter.switchTo called for space \(space.index) (id: \(space.id), fullscreen: \(space.isFullScreen))"
-        )
-
+        print("NativeAdapter.switchTo called for space \(space.index) (id: \(space.id), fullscreen: \(space.isFullScreen))")
+        
         // Check permissions first
         checkPermissions()
-        print(
-            "NativeAdapter: accessibility=\(hasAccessibilityPermission), appleEvents=\(hasAppleEventsPermission)"
-        )
+        print("NativeAdapter: accessibility=\(hasAccessibilityPermission), appleEvents=\(hasAppleEventsPermission)")
 
         // If no permissions available, prompt user
         if !hasAccessibilityPermission && !hasAppleEventsPermission {
@@ -211,21 +207,21 @@ class NativeAdapter: SpaceService {
 
         // Native space switching using keyboard simulation
         // macOS doesn't expose a direct API to switch spaces, so we use:
-        // 1. Keyboard shortcuts (configured in settings, default: Ctrl+Number for 1-10, Ctrl+Option+Number for 11-20)
+        // 1. Mission Control keyboard shortcuts (Ctrl + number)
         // 2. Or AppleScript/Accessibility API
 
-        // Method 1: Use keyboard simulation for spaces 1-20 (configurable shortcuts)
-        // Only use if we have accessibility permission and not fullscreen
+        // Method 1: Use keyboard simulation for Ctrl+Number (works for spaces 1-10)
+        // Only use if we have accessibility permission
         if hasAccessibilityPermission && !space.isFullScreen && space.index >= 1
-            && space.index <= 20
+            && space.index <= 10
         {
             print("NativeAdapter: Using keyboard simulation for space \(space.index)")
             simulateSpaceSwitch(to: space.index)
             return
         }
 
-        // Method 2: Use AppleScript as fallback for fullscreen spaces or spaces > 20
-        // Use if we have Apple Events permission
+        // Method 2: Use AppleScript as fallback for all spaces
+        // Use if we have Apple Events permission or keyboard simulation failed
         if hasAppleEventsPermission {
             print("NativeAdapter: Using AppleScript for space \(space.index)")
             switchViaAppleScript(spaceIndex: space.index, isFullScreen: space.isFullScreen)
@@ -262,27 +258,35 @@ class NativeAdapter: SpaceService {
         }
     }
 
-    /// Simulate keyboard shortcut to switch spaces using configured shortcuts
+    /// Simulate Ctrl+Number keyboard shortcut to switch spaces
     private func simulateSpaceSwitch(to index: Int) {
-        // Get the shortcut from settings
-        guard let shortcut = AppSettings.shared.spaceSwitchShortcuts.shortcut(forSpace: index)
-        else {
-            print("NativeAdapter: No shortcut configured for space \(index)")
+        // Map space index to key code
+        // Space 1 = key 18 (1), Space 2 = key 19 (2), etc.
+        let keyCodes: [Int: CGKeyCode] = [
+            1: 18,  // 1
+            2: 19,  // 2
+            3: 20,  // 3
+            4: 21,  // 4
+            5: 23,  // 5
+            6: 22,  // 6
+            7: 26,  // 7
+            8: 28,  // 8
+            9: 25,  // 9
+            10: 29,  // 0 (for space 10)
+        ]
+
+        guard let keyCode = keyCodes[index] else {
+            print("NativeAdapter: Invalid space index \(index), cannot simulate key press")
             return
         }
 
-        let keyCode = shortcut.keyCode
-        let flags = shortcut.cgEventFlags
-
-        print(
-            "NativeAdapter: Simulating \(shortcut.displayString) for space \(index) (keyCode: \(keyCode))"
-        )
+        print("NativeAdapter: Simulating Ctrl+\(index) (keyCode: \(keyCode))")
 
         let source = CGEventSource(stateID: .hidSystemState)
 
-        // Create key down event with configured modifiers
+        // Create key down event with Control modifier
         if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: true) {
-            keyDown.flags = flags
+            keyDown.flags = .maskControl
             keyDown.post(tap: .cghidEventTap)
             print("NativeAdapter: Posted key down event")
         } else {
@@ -294,7 +298,7 @@ class NativeAdapter: SpaceService {
 
         // Create key up event
         if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: false) {
-            keyUp.flags = flags
+            keyUp.flags = .maskControl
             keyUp.post(tap: .cghidEventTap)
             print("NativeAdapter: Posted key up event")
         } else {
@@ -306,9 +310,6 @@ class NativeAdapter: SpaceService {
     private func switchViaAppleScript(spaceIndex: Int, isFullScreen: Bool) {
         // This requires Accessibility permissions
         // Uses System Events to trigger Mission Control and select the space
-
-        // Get the shortcut from settings for building AppleScript
-        let shortcut = AppSettings.shared.spaceSwitchShortcuts.shortcut(forSpace: spaceIndex)
 
         let script: String
         if isFullScreen {
@@ -322,36 +323,29 @@ class NativeAdapter: SpaceService {
                     key code 53
                 end tell
                 """
-        } else if let shortcut = shortcut, spaceIndex >= 1 && spaceIndex <= 20 {
-            // Use the configured shortcut
-            let keyCode = shortcut.key
-            var modifierParts: [String] = []
-            if shortcut.modifiers.contains("control") { modifierParts.append("control down") }
-            if shortcut.modifiers.contains("option") { modifierParts.append("option down") }
-            if shortcut.modifiers.contains("shift") { modifierParts.append("shift down") }
-            if shortcut.modifiers.contains("cmd") { modifierParts.append("command down") }
-
-            let modifierString =
-                modifierParts.isEmpty ? "" : " using {\(modifierParts.joined(separator: ", "))}"
-
-            script = """
-                tell application "System Events"
-                    key code \(keyCode)\(modifierString)
-                end tell
-                """
         } else {
-            // For spaces beyond 20, use Mission Control navigation
-            script = """
-                tell application "System Events"
-                    key code 126 using control down
-                    delay 0.3
-                    repeat \(spaceIndex - 1) times
-                        key code 124
-                        delay 0.1
-                    end repeat
-                    key code 36
-                end tell
-                """
+            // For regular desktops, use Ctrl + number if in range
+            if spaceIndex >= 1 && spaceIndex <= 10 {
+                let keyCode = spaceIndex == 10 ? 29 : 17 + spaceIndex
+                script = """
+                    tell application "System Events"
+                        key code \(keyCode) using control down
+                    end tell
+                    """
+            } else {
+                // For spaces beyond 10, use Mission Control navigation
+                script = """
+                    tell application "System Events"
+                        key code 126 using control down
+                        delay 0.3
+                        repeat \(spaceIndex - 1) times
+                            key code 124
+                            delay 0.1
+                        end repeat
+                        key code 36
+                    end tell
+                    """
+            }
         }
 
         var error: NSDictionary?
