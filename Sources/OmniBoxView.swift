@@ -28,8 +28,33 @@ struct OmniBoxView: View {
             return sorted
         }
         let query = searchText.lowercased()
-        return sorted.filter { space in
+        let matches = sorted.filter { space in
             fuzzyMatch(query: query, target: space.displayName.lowercased())
+        }
+
+        // Sort: custom-named spaces first, then by match quality
+        return matches.sorted { a, b in
+            let aHasCustomName = a.label != nil && !a.label!.isEmpty
+            let bHasCustomName = b.label != nil && !b.label!.isEmpty
+
+            // Custom-named spaces come first
+            if aHasCustomName && !bHasCustomName { return true }
+            if !aHasCustomName && bHasCustomName { return false }
+
+            // Among same type, prefer exact prefix matches
+            let aName = a.displayName.lowercased()
+            let bName = b.displayName.lowercased()
+            let aStartsWith = aName.hasPrefix(query)
+            let bStartsWith = bName.hasPrefix(query)
+
+            if aStartsWith && !bStartsWith { return true }
+            if !aStartsWith && bStartsWith { return false }
+
+            // Keep current space at top within same category
+            if a.isCurrent && !b.isCurrent { return true }
+            if !a.isCurrent && b.isCurrent { return false }
+
+            return a.index < b.index
         }
     }
 
