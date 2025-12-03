@@ -33,14 +33,29 @@ struct KeyboardShortcut: Codable, Equatable {
 
     var displayString: String {
         var result = ""
-        if modifiers.contains("cmd") { result += "⌘" }
-        if modifiers.contains("shift") { result += "⇧" }
-        if modifiers.contains("option") { result += "⌥" }
         if modifiers.contains("control") { result += "⌃" }
+        if modifiers.contains("option") { result += "⌥" }
+        if modifiers.contains("shift") { result += "⇧" }
+        if modifiers.contains("cmd") { result += "⌘" }
 
         let keyChar = keyToString()
         result += keyChar
         return result
+    }
+
+    /// Convert modifiers to CGEventFlags for keyboard simulation
+    var cgEventFlags: CGEventFlags {
+        var flags = CGEventFlags()
+        if modifiers.contains("control") { flags.insert(.maskControl) }
+        if modifiers.contains("option") { flags.insert(.maskAlternate) }
+        if modifiers.contains("shift") { flags.insert(.maskShift) }
+        if modifiers.contains("cmd") { flags.insert(.maskCommand) }
+        return flags
+    }
+
+    /// Get the key code as CGKeyCode
+    var keyCode: CGKeyCode {
+        return CGKeyCode(key)
     }
 
     private func keyToString() -> String {
@@ -136,6 +151,65 @@ struct KeyboardShortcut: Codable, Equatable {
     }
 }
 
+/// Container for all space switching shortcuts
+struct SpaceSwitchShortcuts: Codable, Equatable {
+    /// Shortcuts for spaces 1-20 (index 0 = space 1, etc.)
+    var shortcuts: [KeyboardShortcut]
+
+    /// Create default shortcuts:
+    /// - Spaces 1-10: Control + Number (10 is Control+0)
+    /// - Spaces 11-20: Control + Option + Number (11 is Control+Option+1, etc.)
+    static func defaults() -> SpaceSwitchShortcuts {
+        var shortcuts: [KeyboardShortcut] = []
+
+        // Key codes for numbers 1-0 on keyboard
+        let numberKeyCodes: [UInt32] = [
+            UInt32(kVK_ANSI_1),  // 1
+            UInt32(kVK_ANSI_2),  // 2
+            UInt32(kVK_ANSI_3),  // 3
+            UInt32(kVK_ANSI_4),  // 4
+            UInt32(kVK_ANSI_5),  // 5
+            UInt32(kVK_ANSI_6),  // 6
+            UInt32(kVK_ANSI_7),  // 7
+            UInt32(kVK_ANSI_8),  // 8
+            UInt32(kVK_ANSI_9),  // 9
+            UInt32(kVK_ANSI_0),  // 0 (for space 10)
+        ]
+
+        // Spaces 1-10: Control + Number
+        for i in 0..<10 {
+            shortcuts.append(
+                KeyboardShortcut(
+                    key: numberKeyCodes[i],
+                    modifiers: ["control"]
+                ))
+        }
+
+        // Spaces 11-20: Control + Option + Number
+        for i in 0..<10 {
+            shortcuts.append(
+                KeyboardShortcut(
+                    key: numberKeyCodes[i],
+                    modifiers: ["control", "option"]
+                ))
+        }
+
+        return SpaceSwitchShortcuts(shortcuts: shortcuts)
+    }
+
+    /// Get shortcut for a given space index (1-based)
+    func shortcut(forSpace index: Int) -> KeyboardShortcut? {
+        guard index >= 1 && index <= shortcuts.count else { return nil }
+        return shortcuts[index - 1]
+    }
+
+    /// Update shortcut for a given space index (1-based)
+    mutating func setShortcut(_ shortcut: KeyboardShortcut, forSpace index: Int) {
+        guard index >= 1 && index <= shortcuts.count else { return }
+        shortcuts[index - 1] = shortcut
+    }
+}
+
 /// User preferences stored in UserDefaults
 class AppSettings: ObservableObject {
     static let shared = AppSettings()
@@ -149,6 +223,7 @@ class AppSettings: ObservableObject {
         static let launchAtLogin = "launchAtLogin"
         static let customHotkey = "customHotkey"
         static let spaceMode = "spaceMode"
+        static let spaceSwitchShortcuts = "spaceSwitchShortcuts"
     }
 
     // MARK: - General Settings
@@ -183,9 +258,18 @@ class AppSettings: ObservableObject {
         }
     }
 
+    @Published var spaceSwitchShortcuts: SpaceSwitchShortcuts {
+        didSet {
+            if let encoded = try? JSONEncoder().encode(spaceSwitchShortcuts) {
+                defaults.set(encoded, forKey: Keys.spaceSwitchShortcuts)
+            }
+        }
+    }
+
     // MARK: - Initialization
     init() {
         let defaultHotkey = KeyboardShortcut(key: UInt32(kVK_Space), modifiers: ["cmd", "shift"])
+        let defaultSpaceSwitchShortcuts = SpaceSwitchShortcuts.defaults()
 
         defaults.register(defaults: [
             Keys.hotkeyEnabled: true,
@@ -204,6 +288,15 @@ class AppSettings: ObservableObject {
             self.customHotkey = decoded
         } else {
             self.customHotkey = defaultHotkey
+        }
+
+        // Load space switch shortcuts
+        if let data = defaults.data(forKey: Keys.spaceSwitchShortcuts),
+            let decoded = try? JSONDecoder().decode(SpaceSwitchShortcuts.self, from: data)
+        {
+            self.spaceSwitchShortcuts = decoded
+        } else {
+            self.spaceSwitchShortcuts = defaultSpaceSwitchShortcuts
         }
 
         // Load space mode
@@ -230,6 +323,7 @@ class AppSettings: ObservableObject {
         showInDock = false
         launchAtLogin = false
         customHotkey = KeyboardShortcut(key: UInt32(kVK_Space), modifiers: ["cmd", "shift"])
+        spaceSwitchShortcuts = SpaceSwitchShortcuts.defaults()
         spaceMode = .auto
     }
 }
@@ -243,12 +337,17 @@ struct SettingsView: View {
                     Label("General", systemImage: "gear")
                 }
 
+            SpaceShortcutsTab()
+                .tabItem {
+                    Label("Shortcuts", systemImage: "keyboard")
+                }
+
             AboutTab()
                 .tabItem {
                     Label("About", systemImage: "info.circle")
                 }
         }
-        .frame(width: 450, height: 320)
+        .frame(width: 500, height: 400)
     }
 }
 
@@ -345,6 +444,281 @@ struct GeneralSettingsTab: View {
         }
         .formStyle(.grouped)
         .padding()
+    }
+}
+
+// MARK: - Space Shortcuts Tab
+struct SpaceShortcutsTab: View {
+    @ObservedObject var settings = AppSettings.shared
+    @State private var recordingSpaceIndex: Int? = nil
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Header
+            HStack {
+                Text("Space Switching Shortcuts")
+                    .font(.headline)
+                Spacer()
+                Button("Reset to Defaults") {
+                    settings.spaceSwitchShortcuts = SpaceSwitchShortcuts.defaults()
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+            .padding(.horizontal)
+            .padding(.top, 12)
+            .padding(.bottom, 8)
+
+            Text(
+                "Configure keyboard shortcuts for switching to each space. Defaults: ⌃1-0 for spaces 1-10, ⌃⌥1-0 for spaces 11-20."
+            )
+            .font(.caption)
+            .foregroundColor(.secondary)
+            .padding(.horizontal)
+            .padding(.bottom, 8)
+
+            // Scrollable list of shortcuts
+            ScrollView {
+                LazyVStack(spacing: 1) {
+                    // Spaces 1-10
+                    ForEach(1...10, id: \.self) { spaceIndex in
+                        SpaceShortcutRow(
+                            spaceIndex: spaceIndex,
+                            shortcut: shortcutBinding(for: spaceIndex),
+                            isRecording: recordingSpaceIndex == spaceIndex,
+                            onStartRecording: {
+                                recordingSpaceIndex = spaceIndex
+                            },
+                            onStopRecording: {
+                                recordingSpaceIndex = nil
+                            }
+                        )
+                    }
+
+                    Divider()
+                        .padding(.vertical, 8)
+
+                    Text("Extended Spaces (11-20)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 4)
+
+                    // Spaces 11-20
+                    ForEach(11...20, id: \.self) { spaceIndex in
+                        SpaceShortcutRow(
+                            spaceIndex: spaceIndex,
+                            shortcut: shortcutBinding(for: spaceIndex),
+                            isRecording: recordingSpaceIndex == spaceIndex,
+                            onStartRecording: {
+                                recordingSpaceIndex = spaceIndex
+                            },
+                            onStopRecording: {
+                                recordingSpaceIndex = nil
+                            }
+                        )
+                    }
+                }
+                .padding(.horizontal, 8)
+                .padding(.bottom, 12)
+            }
+        }
+    }
+
+    private func shortcutBinding(for spaceIndex: Int) -> Binding<KeyboardShortcut> {
+        Binding(
+            get: {
+                settings.spaceSwitchShortcuts.shortcut(forSpace: spaceIndex)
+                    ?? KeyboardShortcut(key: 0, modifiers: [])
+            },
+            set: { newValue in
+                var shortcuts = settings.spaceSwitchShortcuts
+                shortcuts.setShortcut(newValue, forSpace: spaceIndex)
+                settings.spaceSwitchShortcuts = shortcuts
+            }
+        )
+    }
+}
+
+// MARK: - Space Shortcut Row
+struct SpaceShortcutRow: View {
+    let spaceIndex: Int
+    @Binding var shortcut: KeyboardShortcut
+    let isRecording: Bool
+    let onStartRecording: () -> Void
+    let onStopRecording: () -> Void
+
+    var body: some View {
+        HStack {
+            Text("Space \(spaceIndex)")
+                .font(.system(size: 13))
+                .frame(width: 70, alignment: .leading)
+
+            Spacer()
+
+            SpaceShortcutRecorderButton(
+                shortcut: $shortcut,
+                isRecording: isRecording,
+                onStartRecording: onStartRecording,
+                onStopRecording: onStopRecording
+            )
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Color.primary.opacity(0.03))
+        .cornerRadius(6)
+    }
+}
+
+// MARK: - Space Shortcut Recorder Button
+struct SpaceShortcutRecorderButton: View {
+    @Binding var shortcut: KeyboardShortcut
+    let isRecording: Bool
+    let onStartRecording: () -> Void
+    let onStopRecording: () -> Void
+
+    var body: some View {
+        Button(action: {
+            if isRecording {
+                onStopRecording()
+            } else {
+                onStartRecording()
+            }
+        }) {
+            HStack(spacing: 4) {
+                if isRecording {
+                    Text("Type shortcut...")
+                        .foregroundColor(.secondary)
+                } else {
+                    Text(shortcut.displayString)
+                        .fontWeight(.medium)
+                }
+            }
+            .font(.system(size: 11, design: .rounded))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .frame(minWidth: 80)
+            .background(
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(
+                        isRecording ? Color.accentColor.opacity(0.15) : Color.primary.opacity(0.06))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 5)
+                    .strokeBorder(isRecording ? Color.accentColor : Color.clear, lineWidth: 1.5)
+            )
+        }
+        .buttonStyle(.plain)
+        .background(
+            SpaceShortcutRecorderView(
+                isRecording: isRecording,
+                shortcut: $shortcut,
+                onStopRecording: onStopRecording
+            )
+        )
+    }
+}
+
+// MARK: - Space Shortcut Recorder NSView
+struct SpaceShortcutRecorderView: NSViewRepresentable {
+    let isRecording: Bool
+    @Binding var shortcut: KeyboardShortcut
+    let onStopRecording: () -> Void
+
+    func makeNSView(context: Context) -> SpaceShortcutCaptureView {
+        let view = SpaceShortcutCaptureView()
+        view.onShortcutCaptured = { key, modifiers in
+            shortcut = KeyboardShortcut(key: key, modifiers: modifiers)
+            onStopRecording()
+        }
+        view.onCancel = {
+            onStopRecording()
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: SpaceShortcutCaptureView, context: Context) {
+        if isRecording && !nsView.isRecording {
+            nsView.startRecording()
+        } else if !isRecording && nsView.isRecording {
+            nsView.stopRecording()
+        }
+    }
+}
+
+class SpaceShortcutCaptureView: NSView {
+    var isRecording = false
+    var onShortcutCaptured: ((UInt32, [String]) -> Void)?
+    var onCancel: (() -> Void)?
+    private var localMonitor: Any?
+    private var globalMonitor: Any?
+
+    override var acceptsFirstResponder: Bool { true }
+    override var canBecomeKeyView: Bool { true }
+
+    func startRecording() {
+        isRecording = true
+
+        let handleKeyEvent: (NSEvent) -> Bool = { [weak self] event in
+            guard let self = self, self.isRecording else { return false }
+
+            let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+
+            // Escape cancels recording
+            if event.keyCode == 53 {
+                DispatchQueue.main.async {
+                    self.onCancel?()
+                    self.stopRecording()
+                }
+                return true
+            }
+
+            // Require at least one modifier key
+            let acceptableModifiers: NSEvent.ModifierFlags = [.command, .control, .option, .shift]
+            guard !modifiers.intersection(acceptableModifiers).isEmpty else {
+                return false
+            }
+
+            var modifierStrings: [String] = []
+            if modifiers.contains(.command) { modifierStrings.append("cmd") }
+            if modifiers.contains(.shift) { modifierStrings.append("shift") }
+            if modifiers.contains(.option) { modifierStrings.append("option") }
+            if modifiers.contains(.control) { modifierStrings.append("control") }
+
+            DispatchQueue.main.async {
+                self.onShortcutCaptured?(UInt32(event.keyCode), modifierStrings)
+                self.stopRecording()
+            }
+            return true
+        }
+
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            if handleKeyEvent(event) {
+                return nil
+            }
+            return event
+        }
+
+        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { event in
+            _ = handleKeyEvent(event)
+        }
+    }
+
+    func stopRecording() {
+        isRecording = false
+        if let monitor = localMonitor {
+            NSEvent.removeMonitor(monitor)
+            localMonitor = nil
+        }
+        if let monitor = globalMonitor {
+            NSEvent.removeMonitor(monitor)
+            globalMonitor = nil
+        }
+    }
+
+    deinit {
+        stopRecording()
     }
 }
 

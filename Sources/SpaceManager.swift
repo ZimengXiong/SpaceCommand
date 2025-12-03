@@ -94,7 +94,7 @@ class SpaceManager: ObservableObject {
     func switchTo(space: Space) {
         print("SpaceManager.switchTo called for space \(space.index) (id: \(space.id))")
         print("SpaceManager: Using adapter \(activeAdapterName)")
-        
+
         // Handle permissions for native adapter
         if let nativeAdapter = activeAdapter as? NativeAdapter {
             nativeAdapter.checkPermissions()
