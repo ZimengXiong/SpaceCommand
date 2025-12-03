@@ -11,9 +11,7 @@ Activation: Global hotkey (e.g., Cmd+Shift+Space) opens the renaming/switching i
 
 Modes:
 
-Yabai Mode (Priority): Uses yabai CLI for state and navigation.
-
-Native Mode (Fallback): Uses private CoreGraphics APIs (CGSGetWorkspace) and CGEvent keyboard simulation.
+Yabai (Only): This application now supports only yabai CLI for state and navigation. Native CoreGraphics fallback has been removed.
 
 Environment: macOS (Sonoma/Sequoia). No App Sandbox.
 
@@ -100,36 +98,8 @@ Focus space: yabai -m space --focus <LABEL_OR_INDEX>.
 
 Label space: yabai -m space <INDEX> --label <NAME>.
 
-4.3 Native Private APIs (Mode 2)
-You cannot access space information via public APIs. You must bridge CoreGraphics private headers.
-
-The Bridging Header (Sources/Bridging-Header.h):
-
-C
-
-#import <Foundation/Foundation.h>
-#import <CoreGraphics/CoreGraphics.h>
-
-// Private API definitions
-typedef int CGSConnectionID;
-extern CGSConnectionID \_CGSDefaultConnection(void);
-extern CGError CGSGetWorkspace(CGSConnectionID cid, int \*workspace);
-The Swift Implementation:
-
-Swift
-
-// Reading current space
-var workspace: Int32 = 0
-let connection = \_CGSDefaultConnection()
-CGSGetWorkspace(connection, &workspace)
-// Note: 'workspace' is the internal ID, not necessarily the display index.
-Switching Spaces (Native): Do not try to use CGSSetWorkspace (it is broken/protected in modern macOS).
-
-Strategy: Map Space Names to Index Numbers (1-9).
-
-Action: Simulate Ctrl + <Number> keystrokes.
-
-Code: Use CGEvent(keyboardEventSource: ...) with .maskControl.
+4.3 Native Private APIs (REMOVED)
+Native CoreGraphics/CGS-based fallback has been removed from the project. The app only relies on yabai now.
 
 5. EXECUTION PLAN
    Phase 1: Skeleton & Build Loop
