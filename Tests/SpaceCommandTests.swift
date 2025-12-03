@@ -2,56 +2,7 @@ import XCTest
 
 @testable import SpaceCommand
 
-final class PersistenceManagerTests: XCTestCase {
-    var persistenceManager: PersistenceManager!
-    var testFileURL: URL!
-
-    override func setUp() {
-        super.setUp()
-        persistenceManager = PersistenceManager()
-    }
-
-    override func tearDown() {
-        // Clean up test data
-        super.tearDown()
-    }
-
-    func testSaveAndLoadSpaceName() {
-        // Save a space name
-        persistenceManager.saveSpaceName(index: 1, name: "Test Space")
-
-        // Load and verify
-        let names = persistenceManager.loadSpaceNames()
-        XCTAssertEqual(names["1"], "Test Space")
-    }
-
-    func testSaveMultipleSpaceNames() {
-        persistenceManager.saveSpaceName(index: 1, name: "Work")
-        persistenceManager.saveSpaceName(index: 2, name: "Personal")
-        persistenceManager.saveSpaceName(index: 3, name: "Gaming")
-
-        let names = persistenceManager.loadSpaceNames()
-        XCTAssertEqual(names["1"], "Work")
-        XCTAssertEqual(names["2"], "Personal")
-        XCTAssertEqual(names["3"], "Gaming")
-    }
-
-    func testOverwriteSpaceName() {
-        persistenceManager.saveSpaceName(index: 1, name: "Old Name")
-        persistenceManager.saveSpaceName(index: 1, name: "New Name")
-
-        let names = persistenceManager.loadSpaceNames()
-        XCTAssertEqual(names["1"], "New Name")
-    }
-
-    func testRemoveSpaceName() {
-        persistenceManager.saveSpaceName(index: 1, name: "To Remove")
-        persistenceManager.removeSpaceName(index: 1)
-
-        let names = persistenceManager.loadSpaceNames()
-        XCTAssertNil(names["1"])
-    }
-}
+// PersistenceManager tests removed as native mode support is no longer available.
 
 final class SpaceTests: XCTestCase {
     func testSpaceDisplayName_WithLabel() {

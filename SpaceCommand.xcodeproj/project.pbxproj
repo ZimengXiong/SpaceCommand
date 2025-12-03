@@ -10,11 +10,10 @@
 		0B68ECF762AE29A9F4A0EFE4 /* SpaceService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 449629EBAEB4DDB5F0195482 /* SpaceService.swift */; };
 		3735F2F71C2E1D8BCFA200CA /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCE17FB1AC0802634A3F6DBA /* SettingsView.swift */; };
 		4325C2EAB774979A8DA9FA38 /* OmniBoxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B40366C1C9B24E5D036DC5E /* OmniBoxView.swift */; };
+		6A8686991D28064E1C4E6A02 /* VisualEffectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F20F086A31B35274A0F350 /* VisualEffectView.swift */; };
 		709F2AF671FB79FEB6C0A023 /* FloatingPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 834C429E736E60686FDE82D4 /* FloatingPanel.swift */; };
 		CDDE58801E041A4CC3EB1F18 /* YabaiAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8176516BC6E22EC9F1410ACB /* YabaiAdapter.swift */; };
-		D6D3D4590A37052EDB1DFBF9 /* NativeAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AF649089CA3429D7A636147 /* NativeAdapter.swift */; };
 		E6B15E440EB714758A59F599 /* HotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0952297820D78E7423FC1FFE /* HotkeyManager.swift */; };
-		E91C1BD3F89DE87E0083014E /* PersistenceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEA8C2598CE71720AA3296FC /* PersistenceManager.swift */; };
 		EDE475CEE9B02F04B7566F51 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4AC51669A34EDC8D492F136 /* App.swift */; };
 		F734D2E1666D5C2EBE30BB90 /* SpaceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64A5EC53556B59584F934D06 /* SpaceManager.swift */; };
 /* End PBXBuildFile section */
@@ -26,12 +25,10 @@
 		64A5EC53556B59584F934D06 /* SpaceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaceManager.swift; sourceTree = "<group>"; };
 		8176516BC6E22EC9F1410ACB /* YabaiAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YabaiAdapter.swift; sourceTree = "<group>"; };
 		834C429E736E60686FDE82D4 /* FloatingPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingPanel.swift; sourceTree = "<group>"; };
-		8AF649089CA3429D7A636147 /* NativeAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeAdapter.swift; sourceTree = "<group>"; };
+		A2F20F086A31B35274A0F350 /* VisualEffectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualEffectView.swift; sourceTree = "<group>"; };
 		A4AC51669A34EDC8D492F136 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		BCE17FB1AC0802634A3F6DBA /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		DFFDE9703E9150C55871268D /* SpaceCommand.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SpaceCommand.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		EEA8C2598CE71720AA3296FC /* PersistenceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceManager.swift; sourceTree = "<group>"; };
-		F786116FB0097E5D516DE9C0 /* Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Bridging-Header.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -47,15 +44,13 @@
 			isa = PBXGroup;
 			children = (
 				A4AC51669A34EDC8D492F136 /* App.swift */,
-				F786116FB0097E5D516DE9C0 /* Bridging-Header.h */,
 				834C429E736E60686FDE82D4 /* FloatingPanel.swift */,
 				0952297820D78E7423FC1FFE /* HotkeyManager.swift */,
-				8AF649089CA3429D7A636147 /* NativeAdapter.swift */,
 				5B40366C1C9B24E5D036DC5E /* OmniBoxView.swift */,
-				EEA8C2598CE71720AA3296FC /* PersistenceManager.swift */,
 				BCE17FB1AC0802634A3F6DBA /* SettingsView.swift */,
 				64A5EC53556B59584F934D06 /* SpaceManager.swift */,
 				449629EBAEB4DDB5F0195482 /* SpaceService.swift */,
+				A2F20F086A31B35274A0F350 /* VisualEffectView.swift */,
 				8176516BC6E22EC9F1410ACB /* YabaiAdapter.swift */,
 			);
 			path = Sources;
@@ -125,12 +120,11 @@
 				EDE475CEE9B02F04B7566F51 /* App.swift in Sources */,
 				709F2AF671FB79FEB6C0A023 /* FloatingPanel.swift in Sources */,
 				E6B15E440EB714758A59F599 /* HotkeyManager.swift in Sources */,
-				D6D3D4590A37052EDB1DFBF9 /* NativeAdapter.swift in Sources */,
 				4325C2EAB774979A8DA9FA38 /* OmniBoxView.swift in Sources */,
-				E91C1BD3F89DE87E0083014E /* PersistenceManager.swift in Sources */,
 				3735F2F71C2E1D8BCFA200CA /* SettingsView.swift in Sources */,
 				F734D2E1666D5C2EBE30BB90 /* SpaceManager.swift in Sources */,
 				0B68ECF762AE29A9F4A0EFE4 /* SpaceService.swift in Sources */,
+				6A8686991D28064E1C4E6A02 /* VisualEffectView.swift in Sources */,
 				CDDE58801E041A4CC3EB1F18 /* YabaiAdapter.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -276,12 +270,9 @@
 				OTHER_LDFLAGS = (
 					"-framework",
 					Carbon,
-					"-framework",
-					CoreGraphics,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.SpaceCommand.SpaceCommand;
 				SDKROOT = macosx;
-				SWIFT_OBJC_BRIDGING_HEADER = "Sources/Bridging-Header.h";
 			};
 			name = Debug;
 		};
@@ -304,12 +295,9 @@
 				OTHER_LDFLAGS = (
 					"-framework",
 					Carbon,
-					"-framework",
-					CoreGraphics,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.SpaceCommand.SpaceCommand;
 				SDKROOT = macosx;
-				SWIFT_OBJC_BRIDGING_HEADER = "Sources/Bridging-Header.h";
 			};
 			name = Release;
 		};

@@ -12,8 +12,8 @@ class FloatingPanel: NSPanel {
         self.onOpenSettings = onOpenSettings
         
         // Panel dimensions
-        let panelWidth: CGFloat = 560
-        let panelHeight: CGFloat = 380
+        let panelWidth: CGFloat = 600
+        let panelHeight: CGFloat = 400
         
         // Center on screen
         let screenFrame = NSScreen.main?.visibleFrame ?? .zero
@@ -41,11 +41,14 @@ class FloatingPanel: NSPanel {
         self.backgroundColor = .clear
         self.hasShadow = false  // We use SwiftUI shadow instead
         self.isMovableByWindowBackground = false
-        self.hidesOnDeactivate = false
+        self.hidesOnDeactivate = true
         
         // Allow keyboard input
         self.acceptsMouseMovedEvents = true
         self.becomesKeyOnlyIfNeeded = true
+        
+        // Set delegate
+        self.delegate = self
     }
     
     private func setupContent() {
@@ -94,4 +97,10 @@ class FloatingPanel: NSPanel {
     // Allow the panel to become key window for keyboard input
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
+}
+
+extension FloatingPanel: NSWindowDelegate {
+    func windowDidResignKey(_ notification: Notification) {
+        hidePanel()
+    }
 }

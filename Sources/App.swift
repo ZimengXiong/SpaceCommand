@@ -6,18 +6,18 @@ struct SpaceCommandApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     var body: some Scene {
+        // We handle settings manually in AppDelegate to ensure it opens reliably from the agent app
         Settings {
-            SettingsView(spaceManager: SpaceManager.shared)
+            EmptyView()
         }
     }
 }
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var floatingPanel: FloatingPanel?
-    // Settings window is now handled by SwiftUI
     private var hotkeyManager: HotkeyManager?
-    // spaceManager is now a singleton accessed via SpaceManager.shared
     private var statusItem: NSStatusItem?
+    private var settingsWindow: NSWindow?
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Initialize space manager (singleton)
@@ -29,10 +29,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         })
         
         // Setup global hotkey (Cmd+Shift+Space)
-        hotkeyManager = HotkeyManager { [weak self] in
+        hotkeyManager = HotkeyManager()
+        hotkeyManager?.registerDefaultHotkey { [weak self] in
             self?.togglePanel()
         }
-        hotkeyManager?.register()
+        
+        // Register Cmd+, as hotkey for settings
+        hotkeyManager?.register(key: UInt32(kVK_ANSI_Comma), modifierFlags: [.command]) { [weak self] in
+            self?.openSettingsMenu()
+        }
         
         // Setup menu bar
         setupMenuBar()
@@ -41,7 +46,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     func applicationWillTerminate(_ notification: Notification) {
-        hotkeyManager?.unregister()
+        hotkeyManager?.unregisterAll()
     }
     
     private func setupMenuBar() {
@@ -89,12 +94,38 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     @objc private func openSettingsMenu() {
-        // Use standard macOS selector to open settings
-        NSApp.sendAction(Selector("showSettingsWindow:"), to: nil, from: nil)
-        
-        // Also hide the panel if it's open
+        // Hide the main panel first
         floatingPanel?.hidePanel()
+        
+        // Bring app to front
         NSApp.activate(ignoringOtherApps: true)
+        
+        // Create or show settings window
+        if settingsWindow == nil {
+            let settingsView = SettingsView(spaceManager: SpaceManager.shared)
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 480, height: 420),
+                styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
+                backing: .buffered,
+                defer: false
+            )
+            window.center()
+            window.setFrameAutosaveName("Settings")
+            window.title = "SpaceCommand Settings"
+            window.contentView = NSHostingView(rootView: settingsView)
+            window.isReleasedWhenClosed = false
+            window.titlebarAppearsTransparent = true
+            window.titleVisibility = .hidden
+            
+            // Handle window close
+            NotificationCenter.default.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: nil) { [weak self] _ in
+                self?.settingsWindow = nil
+            }
+            
+            self.settingsWindow = window
+        }
+        
+        settingsWindow?.makeKeyAndOrderFront(nil)
     }
     
     @objc private func quitApp() {
@@ -110,6 +141,4 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             panel.showPanel()
         }
     }
-    
-    // Manual settings window management removed in favor of SwiftUI Settings scene
 }
