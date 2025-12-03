@@ -306,15 +306,17 @@ struct OmniBoxView: View {
         }
 
         let targetSpace = filtered[selectedIndex]
-        print("OmniBoxView: handleSubmit - switching to space \(targetSpace.index) (id: \(targetSpace.id), isCurrent: \(targetSpace.isCurrent))")
-        
+        print(
+            "OmniBoxView: handleSubmit - switching to space \(targetSpace.index) (id: \(targetSpace.id), isCurrent: \(targetSpace.isCurrent))"
+        )
+
         // Don't switch if already on the target space
         if targetSpace.isCurrent {
             print("OmniBoxView: Already on target space, just dismissing")
             onDismiss()
             return
         }
-        
+
         spaceManager.switchTo(space: targetSpace)
         onDismiss()
     }
