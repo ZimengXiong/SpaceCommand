@@ -132,14 +132,24 @@ struct OmniBoxView: View {
 
     @ViewBuilder
     private var modeIndicator: some View {
-        let modeText = spaceManager.isYabaiAvailable ? "yabai" : "offline"
-        let modeColor = spaceManager.isYabaiAvailable ? Color.green : Color.red
+        // Use the active adapter name from SpaceManager so the UI reflects the true backend
+        let rawName = spaceManager.activeAdapterName
+        // Normalize display text
+        let displayName: String
+        if rawName.hasPrefix("None") {
+            displayName = "Offline"
+        } else {
+            displayName = rawName
+        }
+
+        // Color green when an active backend is available, otherwise red
+        let modeColor: Color = (spaceManager.hasAvailableBackend && !rawName.hasPrefix("None")) ? Color.green : Color.red
 
         HStack(spacing: 4) {
             Circle()
                 .fill(modeColor)
                 .frame(width: 5, height: 5)
-            Text(modeText)
+            Text(displayName)
                 .font(.system(size: 9, weight: .medium))
         }
         .padding(.horizontal, 8)
