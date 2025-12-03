@@ -24,6 +24,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let spaceManager = SpaceManager.shared
 
+        // Check and request permissions on first launch
+        spaceManager.ensurePermissions()
+
         floatingPanel = FloatingPanel(
             spaceManager: spaceManager,
             onOpenSettings: { [weak self] in
@@ -56,6 +59,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             [weak self] in
             self?.openSettingsMenu()
         }
+
+        // Register Control+Option+Number keys for spaces 11-20
+        setupSpaceNumberHotkeys()
 
         setupMenuBar()
 
@@ -143,6 +149,49 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         settingsWindow?.makeKeyAndOrderFront(nil)
+    }
+
+    /// Register Control+Option+Number hotkeys for spaces 11-20
+    private func setupSpaceNumberHotkeys() {
+        // Map number keys to space indices 11-20
+        // 1 = Space 11, 2 = Space 12, ..., 9 = Space 19, 0 = Space 20
+        let numberKeyMappings: [UInt32: Int] = [
+            UInt32(kVK_ANSI_1): 11,
+            UInt32(kVK_ANSI_2): 12,
+            UInt32(kVK_ANSI_3): 13,
+            UInt32(kVK_ANSI_4): 14,
+            UInt32(kVK_ANSI_5): 15,
+            UInt32(kVK_ANSI_6): 16,
+            UInt32(kVK_ANSI_7): 17,
+            UInt32(kVK_ANSI_8): 18,
+            UInt32(kVK_ANSI_9): 19,
+            UInt32(kVK_ANSI_0): 20,
+        ]
+
+        for (keyCode, spaceIndex) in numberKeyMappings {
+            hotkeyManager?.register(key: keyCode, modifierFlags: [.control, .option]) {
+                [weak self] in
+                self?.handleSpaceNumberHotkey(spaceIndex: spaceIndex)
+            }
+        }
+
+        print("Registered Control+Option+Number hotkeys for spaces 11-20")
+    }
+
+    /// Handle hotkey press for space switching
+    @objc private func handleSpaceNumberHotkey(spaceIndex: Int) {
+        print("Control+Option+\(spaceIndex - 10) pressed - switching to space \(spaceIndex)")
+
+        let spaceManager = SpaceManager.shared
+
+        // Check if we have any available backend
+        if !spaceManager.hasAvailableBackend {
+            print("SpaceManager: No backend available for space switching")
+            return
+        }
+
+        // Switch to the space by index
+        spaceManager.switchToSpace(by: spaceIndex)
     }
 
     @objc private func quitApp() {
