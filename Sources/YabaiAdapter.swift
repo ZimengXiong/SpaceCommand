@@ -5,14 +5,11 @@ class YabaiAdapter: SpaceService {
     private let yabaiPath: String?
     
     init() {
-        // Find yabai binary
         self.yabaiPath = Self.findYabai()
     }
     
     var isAvailable: Bool {
         guard yabaiPath != nil else { return false }
-        
-        // Test if yabai is running by querying spaces
         let result = shell("\(yabaiPath!) -m query --spaces")
         return result != nil && !result!.isEmpty
     }
@@ -83,7 +80,7 @@ class YabaiAdapter: SpaceService {
             }
         }
         
-        // Try which command
+        
         let task = Process()
         let pipe = Pipe()
         task.standardOutput = pipe

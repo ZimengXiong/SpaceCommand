@@ -19,6 +19,8 @@ class HotkeyManager {
     private var hotkeyRefs: [EventHotKeyID: EventHotKeyRef] = [:]
     private var hotkeyHandlers: [EventHotKeyID: () -> Void] = [:]
     private var nextHotKeyID: UInt32 = 1
+    private var mainHotkeyID: EventHotKeyID?
+    private var mainHotkeyHandler: (() -> Void)?
 
     /// Convert NSEvent.ModifierFlags to Carbon modifier flags
     private func carbonModifiers(from flags: NSEvent.ModifierFlags) -> UInt32 {
@@ -103,7 +105,56 @@ class HotkeyManager {
 
     /// Register the default Cmd+Shift+Space hotkey
     func registerDefaultHotkey(handler: @escaping () -> Void) {
-        register(key: UInt32(kVK_Space), modifierFlags: [.command, .shift], handler: handler)
+        mainHotkeyHandler = handler
+        registerMainHotkey(key: UInt32(kVK_Space), modifierFlags: [.command, .shift])
+    }
+
+    /// Register main hotkey with custom key and modifiers
+    func registerMainHotkey(key: UInt32, modifierFlags: NSEvent.ModifierFlags) {
+        // Unregister existing main hotkey if any
+        if let existingID = mainHotkeyID, let ref = hotkeyRefs[existingID] {
+            UnregisterEventHotKey(ref)
+            hotkeyRefs.removeValue(forKey: existingID)
+            hotkeyHandlers.removeValue(forKey: existingID)
+        }
+
+        guard let handler = mainHotkeyHandler else { return }
+
+        let hotkeyID = EventHotKeyID(signature: OSType(0x5343_4D44), id: nextHotKeyID)
+        nextHotKeyID += 1
+        mainHotkeyID = hotkeyID
+
+        let carbonMods = carbonModifiers(from: modifierFlags)
+
+        var hotkeyRef: EventHotKeyRef?
+        let registerStatus = RegisterEventHotKey(
+            key,
+            carbonMods,
+            hotkeyID,
+            GetApplicationEventTarget(),
+            0,
+            &hotkeyRef
+        )
+
+        if registerStatus != noErr {
+            print(
+                "Failed to register main hotkey (Key: \(key), Modifiers: \(carbonMods)): \(registerStatus)"
+            )
+        } else if let ref = hotkeyRef {
+            hotkeyRefs[hotkeyID] = ref
+            hotkeyHandlers[hotkeyID] = handler
+            print("Main hotkey registered: Key \(key), Modifiers \(carbonMods)")
+        }
+    }
+
+    /// Update the main hotkey with new key and modifier strings
+    func updateMainHotkey(key: UInt32, modifiers: [String]) {
+        var flags: NSEvent.ModifierFlags = []
+        if modifiers.contains("cmd") { flags.insert(.command) }
+        if modifiers.contains("shift") { flags.insert(.shift) }
+        if modifiers.contains("option") { flags.insert(.option) }
+        if modifiers.contains("control") { flags.insert(.control) }
+        registerMainHotkey(key: key, modifierFlags: flags)
     }
 
     /// Unregister all hotkeys

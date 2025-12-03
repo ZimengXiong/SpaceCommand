@@ -1,0 +1,128 @@
+# XcodeGen generated project files
+SpaceCommand.xcodeproj/
+
+# Build directories
+build/
+DerivedData/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# Swift build artifacts
+*.swiftmodule
+*.swiftdoc
+*.abi.json
+*.swiftsourceinfo
+*.swift-*.dylib
+
+# Debug symbols
+*.debug.dylib
+*.dSYM/
+*.dSYM.zip
+
+# Xcode
+*.xcworkspace/
+*.xcodeproj/
+!project.yml
+
+# Test artifacts
+*.xcresult
+*.xccoverage/
+
+# Coverage files
+*.gcov
+*.lcov
+coverage.info
+
+# SwiftLint
+/.swiftlint.yml
+
+# Generated files
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Temporary files
+*.tmp
+*.temp
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Carthage
+Carthage/Build/
+Carthage/checkouts/
+
+# CocoaPods
+Pods/
+Podfile.lock
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+fastlane/readme.md
+
+# Generated configuration files
+.xcodeproj/xcuserdata/
+
+# User-specific files
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+*.pbxuser
+*.xccheckout
+*.moved-aside
+
+# Private configuration files
+config/local/
+secrets/
+
+# Node modules (if any)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Log files
+*.log
+
+# Package managers
+Package.resolved
+Package.pins
+Package.userinput
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+*.rej
+*.tmp
+
+# Archive files
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
