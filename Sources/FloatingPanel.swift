@@ -11,8 +11,9 @@ class FloatingPanel: NSPanel {
         self.spaceManager = spaceManager
         self.onOpenSettings = onOpenSettings
 
-        let panelWidth: CGFloat = 600
-        let panelHeight: CGFloat = 400
+        // Panel size for the floating panel
+        let panelWidth: CGFloat = 720
+        let panelHeight: CGFloat = 600
 
         let screenFrame = NSScreen.main?.visibleFrame ?? .zero
         let panelX = (screenFrame.width - panelWidth) / 2 + screenFrame.origin.x
@@ -36,7 +37,10 @@ class FloatingPanel: NSPanel {
         self.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
         self.isOpaque = false
         self.backgroundColor = .clear
-        self.hasShadow = false
+
+        // Enable shadow with proper configuration for non-activating panels
+        self.hasShadow = true
+
         self.isMovableByWindowBackground = false
         self.hidesOnDeactivate = true
 
@@ -60,7 +64,7 @@ class FloatingPanel: NSPanel {
 
         let hostingView = NSHostingView(rootView: omniBoxView)
         hostingView.frame = self.contentView?.bounds ?? .zero
-        hostingView.autoresizingMask = [.width, .height]
+        hostingView.autoresizingMask = NSView.AutoresizingMask([.width, .height])
 
         self.contentView = hostingView
         self.hostingView = hostingView

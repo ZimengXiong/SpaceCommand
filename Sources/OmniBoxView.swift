@@ -55,26 +55,36 @@ struct OmniBoxView: View {
     }
 
     var body: some View {
-        mainContent
-            .frame(width: 520, height: 360)
-            .background(
-                ZStack {
-                    VisualEffectView(material: .hudWindow, blendingMode: .behindWindow)
-                    Color.black.opacity(0.7)
-                }
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.15), lineWidth: 1)
-            )
-            .shadow(color: Color.black.opacity(0.6), radius: 30, x: 0, y: 15)
-            .onAppear(perform: handleAppear)
-            .onDisappear(perform: handleDisappear)
-            .onChange(of: searchText) {
-                selectedIndex = 0
-            }
-            .environment(\.colorScheme, .dark)
+        ZStack {
+            // Shadow layer - Raycast-style deep shadow
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.black.opacity(0.01)) // Nearly invisible fill for shadow casting
+                .frame(width: 520, height: 360)
+                .shadow(color: Color.black.opacity(0.6), radius: 50, x: 0, y: 20)
+                .shadow(color: Color.black.opacity(0.4), radius: 100, x: 0, y: 40)
+                .shadow(color: Color.black.opacity(0.2), radius: 150, x: 0, y: 60)
+
+            // Main content
+            mainContent
+                .frame(width: 520, height: 360)
+                .background(
+                    ZStack {
+                        VisualEffectView(material: .hudWindow, blendingMode: .behindWindow)
+                        Color.black.opacity(0.7)
+                    }
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.15), lineWidth: 0.5)
+                )
+        }
+        .onAppear(perform: handleAppear)
+        .onDisappear(perform: handleDisappear)
+        .onChange(of: searchText) {
+            selectedIndex = 0
+        }
+        .environment(\.colorScheme, .dark)
     }
 
     @ViewBuilder
