@@ -306,17 +306,25 @@ struct OmniBoxView: View {
         }
 
         let targetSpace = filtered[selectedIndex]
-        print("OmniBoxView: handleSubmit - switching to space \(targetSpace.index) (id: \(targetSpace.id), isCurrent: \(targetSpace.isCurrent))")
-        
+        print(
+            "OmniBoxView: handleSubmit - switching to space \(targetSpace.index) (id: \(targetSpace.id), isCurrent: \(targetSpace.isCurrent))"
+        )
+
         // Don't switch if already on the target space
         if targetSpace.isCurrent {
             print("OmniBoxView: Already on target space, just dismissing")
             onDismiss()
             return
         }
-        
-        spaceManager.switchTo(space: targetSpace)
+
+        // IMPORTANT: Dismiss the panel FIRST, then switch spaces after a brief delay
+        // This ensures the panel doesn't capture the keyboard events meant for space switching
         onDismiss()
+
+        // Small delay to let the panel fully hide before triggering space switch
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            self.spaceManager.switchTo(space: targetSpace)
+        }
     }
 
     private func performRename() {

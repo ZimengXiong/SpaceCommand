@@ -20,17 +20,17 @@ class SpaceManager: ObservableObject {
         self.yabaiAdapter = YabaiAdapter()
         self.nativeAdapter = NativeAdapter()
 
-        // Load saved mode preference
+        
         self.currentMode = AppSettings.shared.spaceMode
 
-        // Check availability
+        
         self.isYabaiAvailable = yabaiAdapter.isAvailable
         self.isNativeAvailable = nativeAdapter.isAvailable
 
-        // Select appropriate adapter based on mode
+        
         updateActiveAdapter()
 
-        // Listen for mode changes from settings
+        
         AppSettings.shared.$spaceMode
             .sink { [weak self] newMode in
                 self?.currentMode = newMode
@@ -94,7 +94,7 @@ class SpaceManager: ObservableObject {
     func switchTo(space: Space) {
         print("SpaceManager.switchTo called for space \(space.index) (id: \(space.id))")
         print("SpaceManager: Using adapter \(activeAdapterName)")
-        
+
         // Handle permissions for native adapter
         if let nativeAdapter = activeAdapter as? NativeAdapter {
             nativeAdapter.checkPermissions()
@@ -132,8 +132,34 @@ class SpaceManager: ObservableObject {
         renameSpace(space: current, to: name)
     }
 
+    /// Switch to a space by index (1-based)
+    func switchToSpace(by index: Int) {
+        print("SpaceManager.switchToSpace called for index \(index)")
+
+        // Refresh spaces to get latest state
+        refreshSpaces()
+
+        // Find space by index
+        guard let space = spaces.first(where: { $0.index == index }) else {
+            print("SpaceManager: No space found with index \(index)")
+            return
+        }
+
+        switchTo(space: space)
+    }
+
     /// Check if any backend is available
     var hasAvailableBackend: Bool {
         return isYabaiAvailable || isNativeAvailable
+    }
+
+    /// Ensure permissions are granted for native mode
+    /// Call this on app launch to prompt for permissions if needed
+    func ensurePermissions() {
+        // Only prompt for native adapter permissions if we're using native mode
+        // or if yabai isn't available (auto mode will fall back to native)
+        if currentMode == .native || (currentMode == .auto && !isYabaiAvailable) {
+            nativeAdapter.ensurePermissionsOnFirstLaunch()
+        }
     }
 }
