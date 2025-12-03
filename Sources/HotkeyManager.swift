@@ -2,8 +2,7 @@ import AppKit  // Import AppKit for NSEvent.ModifierFlags
 import Carbon
 import Foundation
 
-// Make EventHotKeyID Hashable and Equatable
-extension EventHotKeyID: @retroactive Hashable, @retroactive Equatable {
+extension EventHotKeyID: Hashable {
     public func hash(into hasher: inout Hasher) {
         hasher.combine(signature)
         hasher.combine(id)
@@ -21,8 +20,8 @@ class HotkeyManager {
     private var nextHotKeyID: UInt32 = 1
     private var mainHotkeyID: EventHotKeyID?
     private var mainHotkeyHandler: (() -> Void)?
+    private let logger = Logger.shared
 
-    /// Convert NSEvent.ModifierFlags to Carbon modifier flags
     private func carbonModifiers(from flags: NSEvent.ModifierFlags) -> UInt32 {
         var carbonFlags: UInt32 = 0
         if flags.contains(.command) { carbonFlags |= UInt32(cmdKey) }
@@ -33,7 +32,7 @@ class HotkeyManager {
     }
 
     init() {
-        // Install event handler for all hotkeys managed by this manager
+
         let refcon = UnsafeMutableRawPointer(Unmanaged.passRetained(self).toOpaque())
         var eventType = EventTypeSpec(
             eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
@@ -66,7 +65,7 @@ class HotkeyManager {
         )
 
         if status != noErr {
-            print("Failed to install event handler: \(status)")
+            logger.error("Failed to install event handler: \(status)")
         }
     }
 
@@ -74,7 +73,6 @@ class HotkeyManager {
         unregisterAll()
     }
 
-    /// Register a custom hotkey
     func register(key: UInt32, modifierFlags: NSEvent.ModifierFlags, handler: @escaping () -> Void)
     {
         let hotkeyID = EventHotKeyID(signature: OSType(0x5343_4D44), id: nextHotKeyID)
@@ -93,25 +91,23 @@ class HotkeyManager {
         )
 
         if registerStatus != noErr {
-            print(
+            logger.error(
                 "Failed to register hotkey (Key: \(key), Carbon Modifiers: \(carbonMods)): \(registerStatus)"
             )
         } else if let ref = hotkeyRef {
             hotkeyRefs[hotkeyID] = ref
             hotkeyHandlers[hotkeyID] = handler
-            print("Global hotkey registered: Key \(key), Carbon Modifiers \(carbonMods)")
+            logger.info("Global hotkey registered: Key \(key), Carbon Modifiers \(carbonMods)")
         }
     }
 
-    /// Register the default Cmd+Shift+Space hotkey
     func registerDefaultHotkey(handler: @escaping () -> Void) {
         mainHotkeyHandler = handler
         registerMainHotkey(key: UInt32(kVK_Space), modifierFlags: [.command, .shift])
     }
 
-    /// Register main hotkey with custom key and modifiers
     func registerMainHotkey(key: UInt32, modifierFlags: NSEvent.ModifierFlags) {
-        // Unregister existing main hotkey if any
+
         if let existingID = mainHotkeyID, let ref = hotkeyRefs[existingID] {
             UnregisterEventHotKey(ref)
             hotkeyRefs.removeValue(forKey: existingID)
@@ -137,17 +133,16 @@ class HotkeyManager {
         )
 
         if registerStatus != noErr {
-            print(
+            logger.error(
                 "Failed to register main hotkey (Key: \(key), Modifiers: \(carbonMods)): \(registerStatus)"
             )
         } else if let ref = hotkeyRef {
             hotkeyRefs[hotkeyID] = ref
             hotkeyHandlers[hotkeyID] = handler
-            print("Main hotkey registered: Key \(key), Modifiers \(carbonMods)")
+            logger.info("Main hotkey registered: Key \(key), Modifiers \(carbonMods)")
         }
     }
 
-    /// Update the main hotkey with new key and modifier strings
     func updateMainHotkey(key: UInt32, modifiers: [String]) {
         var flags: NSEvent.ModifierFlags = []
         if modifiers.contains("cmd") { flags.insert(.command) }
@@ -157,7 +152,6 @@ class HotkeyManager {
         registerMainHotkey(key: key, modifierFlags: flags)
     }
 
-    /// Unregister all hotkeys
     func unregisterAll() {
         for (_, ref) in hotkeyRefs {
             UnregisterEventHotKey(ref)

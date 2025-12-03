@@ -6,7 +6,7 @@ struct SpaceCommandApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {
-        // We handle settings manually in AppDelegate to ensure it opens reliably from the agent app
+
         Settings {
             EmptyView()
         }
@@ -19,12 +19,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var settingsWindow: NSWindow?
     private var hotkeyObserver: NSObjectProtocol?
+    private var menuBarIconObserver: NSObjectProtocol?
+    private let logger = Logger.shared
 
     func applicationDidFinishLaunching(_ notification: Notification) {
 
         let spaceManager = SpaceManager.shared
 
-        // Check and request permissions on first launch
         spaceManager.ensurePermissions()
 
         floatingPanel = FloatingPanel(
@@ -33,7 +34,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.openSettingsMenu()
             })
 
-        // Setup global hotkey using saved settings
         hotkeyManager = HotkeyManager()
         let settings = AppSettings.shared
 
@@ -60,16 +60,45 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self?.openSettingsMenu()
         }
 
-        // Register Control+Option+Number keys for spaces 11-20
         setupSpaceNumberHotkeys()
 
         setupMenuBar()
 
-        print("SpaceCommand v\(AppInfo.version) launched. Press Cmd+Shift+Space to activate.")
+        if !settings.showMenuBarIcon {
+            if let existing = statusItem {
+                NSStatusBar.system.removeStatusItem(existing)
+                statusItem = nil
+            }
+        }
+
+        menuBarIconObserver = NotificationCenter.default.addObserver(
+            forName: .menuBarIconVisibilityDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let self = self else { return }
+            guard let show = notification.object as? Bool else { return }
+
+            if show {
+                if self.statusItem == nil {
+                    self.setupMenuBar()
+                }
+            } else {
+                if let existing = self.statusItem {
+                    NSStatusBar.system.removeStatusItem(existing)
+                    self.statusItem = nil
+                }
+            }
+        }
+
+        logger.info("SpaceCommand v\(AppInfo.version) launched. Press Cmd+Shift+Space to activate.")
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         hotkeyManager?.unregisterAll()
+        if let observer = menuBarIconObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
     }
 
     private func setupMenuBar() {
@@ -124,7 +153,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         NSApp.activate(ignoringOtherApps: true)
 
-        // Create or show settings window
         if settingsWindow == nil {
             let settingsView = SettingsView()
             let window = NSWindow(
@@ -151,7 +179,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         settingsWindow?.makeKeyAndOrderFront(nil)
     }
 
-    /// Register Control+Option+Number hotkeys for spaces 11-20
     private func setupSpaceNumberHotkeys() {
         // Map number keys to space indices 11-20
         // 1 = Space 11, 2 = Space 12, ..., 9 = Space 19, 0 = Space 20
@@ -175,18 +202,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        print("Registered Control+Option+Number hotkeys for spaces 11-20")
+        logger.info("Registered Control+Option+Number hotkeys for spaces 11-20")
     }
 
-    /// Handle hotkey press for space switching
     @objc private func handleSpaceNumberHotkey(spaceIndex: Int) {
-        print("Control+Option+\(spaceIndex - 10) pressed - switching to space \(spaceIndex)")
+        logger.debug("Control+Option+\(spaceIndex - 10) pressed - switching to space \(spaceIndex)")
 
         let spaceManager = SpaceManager.shared
 
         // Check if we have any available backend
         if !spaceManager.hasAvailableBackend {
-            print("SpaceManager: No backend available for space switching")
+            logger.warning("SpaceManager: No backend available for space switching")
             return
         }
 

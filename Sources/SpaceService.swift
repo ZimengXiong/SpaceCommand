@@ -1,6 +1,6 @@
 import Foundation
 
-/// Represents a virtual desktop/space
+/// Virtual desktop/space model
 struct Space: Identifiable, Equatable {
     let id: String
     let index: Int
@@ -10,7 +10,6 @@ struct Space: Identifiable, Equatable {
     let displayId: String?
     let isFullScreen: Bool
 
-    /// Initialize a space (with defaults for optional native-mode properties)
     init(
         id: String, index: Int, label: String?, isCurrent: Bool, uuid: String?,
         displayId: String? = nil, isFullScreen: Bool = false
@@ -35,7 +34,7 @@ struct Space: Identifiable, Equatable {
     }
 }
 
-/// Protocol defining space management operations
+/// Space management operations protocol
 protocol SpaceService {
     func getSpaces() -> [Space]
     func getCurrentSpace() -> Space?
@@ -43,8 +42,5 @@ protocol SpaceService {
     func renameSpace(space: Space, to name: String)
     var isAvailable: Bool { get }
 
-    /// Check if the adapter can perform operations (has necessary permissions)
     var canPerformOperations: Bool { get }
 }
-
-

@@ -11,7 +11,8 @@ targets:
     sources: [Sources]
     settings:
       base:
-        GENERATE_INFOPLIST_FILE: YES
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Resources/Info.plist
         INFOPLIST_KEY_LSUIElement: true
         INFOPLIST_KEY_NSHumanReadableCopyright: "Copyright © 2024 SpaceCommand"
         ENABLE_USER_SCRIPT_SANDBOXING: NO

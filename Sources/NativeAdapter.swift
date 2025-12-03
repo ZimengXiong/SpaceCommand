@@ -3,8 +3,7 @@ import Foundation
 import Security
 import ServiceManagement
 
-/// Native macOS adapter using private CoreGraphics APIs for Space management
-/// This allows SpaceCommand to work without Yabai installed
+/// Native macOS space management adapter
 class NativeAdapter: SpaceService {
     private let conn = _CGSDefaultConnection()
     private let defaults = UserDefaults.standard
@@ -12,34 +11,28 @@ class NativeAdapter: SpaceService {
     private let permissionsCheckedKey = "permissionsInitiallyChecked"
     private var hasAccessibilityPermission: Bool = false
     private var hasAppleEventsPermission: Bool = false
+    private let logger = Logger.shared
 
-    // MARK: - Permission Management
-
-    /// Check and update permission status
     func checkPermissions() {
         hasAccessibilityPermission = checkAccessibilityPermission()
         hasAppleEventsPermission = checkAppleEventsPermission()
-        print(
+        logger.debug(
             "NativeAdapter: Permissions check - Accessibility: \(hasAccessibilityPermission), Automation: \(hasAppleEventsPermission)"
         )
     }
 
-    /// Request all required permissions on first launch
-    /// Call this from the app delegate or on first panel show
     func ensurePermissionsOnFirstLaunch() {
         checkPermissions()
 
-        print(
+        logger.debug(
             "NativeAdapter: ensurePermissionsOnFirstLaunch - Accessibility: \(hasAccessibilityPermission), Automation: \(hasAppleEventsPermission)"
         )
 
-        // If Automation permission is missing, trigger it first (it shows a system prompt)
         if !hasAppleEventsPermission {
-            print("NativeAdapter: Triggering System Events permission prompt...")
+            logger.info("NativeAdapter: Triggering System Events permission prompt...")
             triggerSystemEventsPermissionPrompt()
         }
 
-        // If Accessibility permission is missing, show our dialog
         if !hasAccessibilityPermission {
             let alert = NSAlert()
             alert.messageText = "Accessibility Permission Required"
@@ -53,7 +46,6 @@ class NativeAdapter: SpaceService {
             alert.addButton(withTitle: "Later")
 
             if alert.runModal() == .alertFirstButtonReturn {
-                // Trigger the system prompt
                 let options: NSDictionary = [
                     kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true
                 ]
@@ -61,14 +53,11 @@ class NativeAdapter: SpaceService {
             }
         }
 
-        
         checkPermissions()
     }
 
-    /// Trigger the System Events permission prompt by running an AppleScript
-    /// This will cause macOS to show the "SpaceCommand wants to control System Events" dialog
     private func triggerSystemEventsPermissionPrompt() {
-        // This AppleScript will trigger the Automation permission prompt for System Events
+
         let script = """
             tell application "System Events"
                 set frontApp to name of first application process whose frontmost is true
@@ -80,21 +69,19 @@ class NativeAdapter: SpaceService {
         if let appleScript = NSAppleScript(source: script) {
             let result = appleScript.executeAndReturnError(&error)
             if let error = error {
-                print(
+                logger.debug(
                     "NativeAdapter: AppleScript error (expected if permission not yet granted): \(error)"
                 )
-                // Error -1743 means user denied permission
-                // Error -600 means app not running (System Events needs to launch)
+
             } else {
-                print(
-                    "NativeAdapter: AppleScript executed successfully, result: \(result.stringValue ?? "nil")"
-                )
+                let outputString = result.stringValue ?? "nil"
+                logger.debug(
+                    "NativeAdapter: AppleScript executed successfully, result: \(outputString)")
                 hasAppleEventsPermission = true
             }
         }
     }
 
-    /// Public properties to check permission status
     public var hasAccessibilityPermissionPublic: Bool {
         return hasAccessibilityPermission
     }
@@ -103,14 +90,12 @@ class NativeAdapter: SpaceService {
         return hasAppleEventsPermission
     }
 
-    /// Check if Accessibility permission is granted
     private func checkAccessibilityPermission() -> Bool {
         let options: NSDictionary = [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): false]
         let accessibilityEnabled = AXIsProcessTrustedWithOptions(options)
         return accessibilityEnabled
     }
 
-    /// Check if Apple Events permission is granted
     private func checkAppleEventsPermission() -> Bool {
         let script = """
             tell application "System Events"
@@ -126,7 +111,6 @@ class NativeAdapter: SpaceService {
         return false
     }
 
-    /// Prompt user to grant Accessibility permission
     func requestAccessibilityPermission() {
         let alert = NSAlert()
         alert.messageText = "Accessibility Permission Required"
@@ -138,11 +122,10 @@ class NativeAdapter: SpaceService {
 
         let response = alert.runModal()
         if response == .alertFirstButtonReturn {
-            // Use the prompt option to trigger the system dialog
+
             let options: NSDictionary = [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true]
             AXIsProcessTrustedWithOptions(options)
 
-            // Also open the preferences pane
             if let url = URL(
                 string:
                     "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
@@ -152,7 +135,6 @@ class NativeAdapter: SpaceService {
         }
     }
 
-    /// Prompt user to grant Apple Events/Automation permission
     func requestAppleEventsPermission() {
         let alert = NSAlert()
         alert.messageText = "Automation Permission Required"
@@ -165,14 +147,14 @@ class NativeAdapter: SpaceService {
 
         let response = alert.runModal()
         if response == .alertFirstButtonReturn {
-            // Open Automation preferences
+
             if let url = URL(
                 string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation"
             ) {
                 NSWorkspace.shared.open(url)
             }
         } else if response == .alertSecondButtonReturn {
-            // Try to trigger the permission prompt by running an AppleScript
+
             let script = """
                 tell application "System Events"
                     return name of first process
@@ -183,7 +165,7 @@ class NativeAdapter: SpaceService {
             if let appleScript = NSAppleScript(source: script) {
                 appleScript.executeAndReturnError(&error)
                 if error != nil {
-                    // Permission denied - show follow-up
+
                     let errorAlert = NSAlert()
                     errorAlert.messageText = "Permission Needed"
                     errorAlert.informativeText =
@@ -200,7 +182,7 @@ class NativeAdapter: SpaceService {
                         }
                     }
                 } else {
-                    // Permission was granted!
+
                     checkPermissions()
                 }
             }
@@ -208,14 +190,12 @@ class NativeAdapter: SpaceService {
     }
 
     var isAvailable: Bool {
-        
+
         checkPermissions()
 
-        // Try to get spaces - if this works, native mode is functional
         let spaces = getSpaces()
         let basicAvailability = !spaces.isEmpty
 
-        // We need at least one permission type to be available
         return basicAvailability && (hasAccessibilityPermission || hasAppleEventsPermission)
     }
 
@@ -250,17 +230,14 @@ class NativeAdapter: SpaceService {
                 let isFullScreen = spaceDict["TileLayoutManager"] as? [String: Any] != nil
                 let isCurrent = activeSpaceID == spaceID
 
-                // Only count non-fullscreen spaces as desktop numbers
                 if !isFullScreen {
                     desktopNumber += 1
                 }
 
                 spaceIndex += 1
 
-                // Determine the label/name
                 var label: String? = savedNames[spaceIDString]
 
-                // For fullscreen spaces, try to get the app name if no saved name
                 if label == nil && isFullScreen {
                     if let pid = spaceDict["pid"] as? pid_t,
                         let app = NSRunningApplication(processIdentifier: pid),
@@ -292,103 +269,90 @@ class NativeAdapter: SpaceService {
     }
 
     func switchTo(space: Space) {
-        print(
+        logger.debug(
             "NativeAdapter.switchTo called for space \(space.index) (id: \(space.id), fullscreen: \(space.isFullScreen))"
         )
 
-        
         checkPermissions()
-        print(
+        logger.debug(
             "NativeAdapter: accessibility=\(hasAccessibilityPermission), appleEvents=\(hasAppleEventsPermission)"
         )
 
-        // Log bundle info for debugging
         if let bundleID = Bundle.main.bundleIdentifier {
-            print("NativeAdapter: Running as bundle: \(bundleID)")
+            logger.debug("NativeAdapter: Running as bundle: \(bundleID)")
         }
-        print("NativeAdapter: Executable path: \(Bundle.main.executablePath ?? "unknown")")
+        logger.debug("NativeAdapter: Executable path: \(Bundle.main.executablePath ?? "unknown")")
 
-        // If no permissions available, prompt user
         if !hasAccessibilityPermission && !hasAppleEventsPermission {
-            print("NativeAdapter: No permissions, requesting...")
+            logger.info("NativeAdapter: No permissions, requesting...")
             requestAccessibilityPermission()
             return
         }
 
-        // Native space switching using keyboard simulation
-        // macOS doesn't expose a direct API to switch spaces, so we use:
-        // 1. CGEvent keyboard simulation (preferred - works best from command line/background)
-        // 2. AppleScript as fallback (works when System Events has focus control)
+        // Switch spaces using CGEvent then AppleScript fallback
 
-        
         let currentSpaceBefore = getCurrentSpace()
-        print("NativeAdapter: Current space before switch: \(currentSpaceBefore?.index ?? -1)")
+        logger.debug(
+            "NativeAdapter: Current space before switch: \(currentSpaceBefore?.index ?? -1)")
 
-        
         if hasAccessibilityPermission && !space.isFullScreen && space.index >= 1
             && space.index <= 10
         {
-            print("NativeAdapter: Using CGEvent keyboard simulation for space \(space.index)")
+            logger.debug(
+                "NativeAdapter: Using CGEvent keyboard simulation for space \(space.index)")
 
-            
             for attempt in 1...3 {
-                print("NativeAdapter: CGEvent attempt \(attempt)")
+                logger.debug("NativeAdapter: CGEvent attempt \(attempt)")
                 let success = simulateSpaceSwitchWithCGEvent(to: space.index)
                 if success {
-                    // Give macOS time to process the event
-                    usleep(150000)  // 150ms
-
-                    // Verify the switch happened
+                    usleep(150000)
                     let currentSpaceAfter = getCurrentSpace()
-                    print(
+                    logger.debug(
                         "NativeAdapter: Current space after CGEvent: \(currentSpaceAfter?.index ?? -1)"
                     )
 
                     if currentSpaceAfter?.index == space.index {
-                        print("NativeAdapter: CGEvent switch verified successful!")
+                        logger.info("NativeAdapter: CGEvent switch verified successful!")
                         return
                     }
-                    print(
+                    logger.debug(
                         "NativeAdapter: CGEvent posted but switch not verified, attempt \(attempt)")
                 }
-                usleep(100000)  // 100ms between attempts
+                usleep(100000)
             }
-            print("NativeAdapter: CGEvent failed after 3 attempts, trying AppleScript fallback")
+            logger.info(
+                "NativeAdapter: CGEvent failed after 3 attempts, trying AppleScript fallback")
         }
 
-        
         if hasAppleEventsPermission {
             for attempt in 1...2 {
-                print("NativeAdapter: AppleScript attempt \(attempt) for space \(space.index)")
+                logger.debug(
+                    "NativeAdapter: AppleScript attempt \(attempt) for space \(space.index)")
                 switchViaAppleScript(spaceIndex: space.index, isFullScreen: space.isFullScreen)
 
-                // Give time for AppleScript to execute
-                usleep(200000)  // 200ms
+                usleep(200000)
 
-                // Verify the switch
                 let currentSpaceAfter = getCurrentSpace()
-                print(
+                logger.debug(
                     "NativeAdapter: Current space after AppleScript: \(currentSpaceAfter?.index ?? -1)"
                 )
 
                 if currentSpaceAfter?.index == space.index {
-                    print("NativeAdapter: AppleScript switch verified successful!")
+                    logger.info("NativeAdapter: AppleScript switch verified successful!")
                     return
                 }
-                usleep(100000)  // 100ms between attempts
+                usleep(100000)
             }
         }
 
-        
-        print("NativeAdapter: All switching methods failed")
+        logger.warning("NativeAdapter: All switching methods failed")
         if !hasAccessibilityPermission {
             requestAccessibilityPermission()
         }
     }
 
     func renameSpace(space: Space, to name: String) {
-        // Native macOS doesn't support renaming spaces directly
-        // We store names locally in UserDefaults
+        // Store names in UserDefaults - macOS doesn't support direct renaming
         var savedNames = loadSpaceNames()
         savedNames[space.id] = name.isEmpty ? nil : name
         saveSpaceNames(savedNames)
@@ -411,105 +375,95 @@ class NativeAdapter: SpaceService {
         }
     }
 
-    /// Simulate Ctrl+Number keyboard shortcut to switch spaces using CGEvent
-    /// Returns true if the event was posted successfully
     private func simulateSpaceSwitchWithCGEvent(to index: Int) -> Bool {
         // macOS key codes for number keys (these are NOT sequential!)
         let keyCodes: [Int: CGKeyCode] = [
-            1: 18,  // 1
-            2: 19,  // 2
-            3: 20,  // 3
-            4: 21,  // 4
-            5: 23,  // 5
-            6: 22,  // 6
-            7: 26,  // 7
-            8: 28,  // 8
-            9: 25,  // 9
-            10: 29,  // 0 (for space 10)
+            1: 18,
+            2: 19,
+            3: 20,
+            4: 21,
+            5: 23,
+            6: 22,
+            7: 26,
+            8: 28,
+            9: 25,
+            10: 29,
         ]
 
         guard let keyCode = keyCodes[index] else {
-            print("NativeAdapter: Invalid space index \(index), cannot simulate key press")
+            logger.warning("NativeAdapter: Invalid space index \(index), cannot simulate key press")
             return false
         }
 
-        print(
+        logger.debug(
             "NativeAdapter: Simulating Ctrl+\(index == 10 ? "0" : String(index)) (keyCode: \(keyCode))"
         )
 
-        // Try different event source states - hidSystemState often works better for GUI apps
         let sourceStates: [CGEventSourceStateID] = [.hidSystemState, .combinedSessionState]
 
         for sourceState in sourceStates {
-            print("NativeAdapter: Trying CGEventSource state: \(sourceState.rawValue)")
+            logger.debug("NativeAdapter: Trying CGEventSource state: \(sourceState.rawValue)")
 
             guard let source = CGEventSource(stateID: sourceState) else {
-                print(
+                logger.warning(
                     "NativeAdapter: Failed to create event source with state \(sourceState.rawValue)"
                 )
                 continue
             }
 
-            // Create key down event with Control modifier
             guard
                 let keyDown = CGEvent(
                     keyboardEventSource: source, virtualKey: keyCode, keyDown: true)
             else {
-                print("NativeAdapter: Failed to create key down event")
+                logger.warning("NativeAdapter: Failed to create key down event")
                 continue
             }
 
             keyDown.flags = .maskControl
-
-            // Create key up event
             guard
                 let keyUp = CGEvent(
                     keyboardEventSource: source, virtualKey: keyCode, keyDown: false)
             else {
-                print("NativeAdapter: Failed to create key up event")
+                logger.warning("NativeAdapter: Failed to create key up event")
                 continue
             }
 
             keyUp.flags = .maskControl
-
-            // Try cghidEventTap first (lowest level, works best for system hotkeys)
-            print("NativeAdapter: Posting to cghidEventTap")
+            logger.debug("NativeAdapter: Posting to cghidEventTap")
             keyDown.post(tap: .cghidEventTap)
-            usleep(30000)  // 30ms
+            usleep(30000)
             keyUp.post(tap: .cghidEventTap)
 
-            print(
+            logger.debug(
                 "NativeAdapter: Posted key events with sourceState \(sourceState.rawValue) to cghidEventTap"
             )
             return true
         }
 
-        print("NativeAdapter: All CGEvent approaches failed")
+        logger.warning("NativeAdapter: All CGEvent approaches failed")
         return false
     }
 
-    /// Use AppleScript to switch spaces via Mission Control
     private func switchViaAppleScript(spaceIndex: Int, isFullScreen: Bool) {
-        // This requires Accessibility permissions
         // Uses System Events to trigger Mission Control and select the space
 
         // macOS key codes for number keys (these are NOT sequential!)
         let numberKeyCodes: [Int: Int] = [
-            1: 18,  // '1'
-            2: 19,  // '2'
-            3: 20,  // '3'
-            4: 21,  // '4'
-            5: 23,  // '5'
-            6: 22,  // '6'
-            7: 26,  // '7'
-            8: 28,  // '8'
-            9: 25,  // '9'
-            10: 29,  // '0'
+            1: 18,
+            2: 19,
+            3: 20,
+            4: 21,
+            5: 23,
+            6: 22,
+            7: 26,
+            8: 28,
+            9: 25,
+            10: 29,
         ]
 
         let script: String
         if isFullScreen {
-            // For fullscreen apps, we can try to activate by index
+
             script = """
                 tell application "System Events"
                     key code 126 using control down
@@ -520,9 +474,9 @@ class NativeAdapter: SpaceService {
                 end tell
                 """
         } else {
-            // For regular desktops, use Ctrl + number if in range
+
             if spaceIndex >= 1 && spaceIndex <= 10, let keyCode = numberKeyCodes[spaceIndex] {
-                print(
+                logger.debug(
                     "NativeAdapter: AppleScript using key code \(keyCode) for space \(spaceIndex)")
                 script = """
                     tell application "System Events"
@@ -530,7 +484,7 @@ class NativeAdapter: SpaceService {
                     end tell
                     """
             } else {
-                // For spaces beyond 10, use Mission Control navigation
+
                 script = """
                     tell application "System Events"
                         key code 126 using control down
@@ -545,17 +499,17 @@ class NativeAdapter: SpaceService {
             }
         }
 
-        print("NativeAdapter: Executing AppleScript: \(script)")
+        logger.debug("NativeAdapter: Executing AppleScript: \(script)")
         var error: NSDictionary?
         if let appleScript = NSAppleScript(source: script) {
             let result = appleScript.executeAndReturnError(&error)
             if let error = error {
-                print("NativeAdapter: AppleScript error: \(error)")
+                logger.error("NativeAdapter: AppleScript error: \(error)")
             } else {
-                print("NativeAdapter: AppleScript executed successfully, result: \(result)")
+                logger.debug("NativeAdapter: AppleScript executed successfully, result: \(result)")
             }
         } else {
-            print("NativeAdapter: Failed to create AppleScript")
+            logger.warning("NativeAdapter: Failed to create AppleScript")
         }
     }
 }

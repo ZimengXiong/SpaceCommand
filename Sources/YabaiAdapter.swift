@@ -1,6 +1,6 @@
 import Foundation
 
-/// Adapter for Yabai window manager integration
+/// Yabai window manager adapter
 class YabaiAdapter: SpaceService {
     private let yabaiPath: String?
 
@@ -8,16 +8,15 @@ class YabaiAdapter: SpaceService {
         self.yabaiPath = Self.findYabai()
     }
 
+    private let logger = Logger.shared
+
     var isAvailable: Bool {
         guard yabaiPath != nil else { return false }
         let result = shell("\(yabaiPath!) -m query --spaces")
         return result != nil && !result!.isEmpty
     }
 
-    var canPerformOperations: Bool {
-        // Yabai can always perform operations if it's available
-        return isAvailable
-    }
+    var canPerformOperations: Bool { return isAvailable }
 
     func getSpaces() -> [Space] {
         guard let yabai = yabaiPath,
@@ -40,7 +39,7 @@ class YabaiAdapter: SpaceService {
                 )
             }
         } catch {
-            print("Failed to parse yabai spaces: \(error)")
+            logger.error("Failed to parse yabai spaces: \(error)")
             return []
         }
     }
@@ -52,9 +51,8 @@ class YabaiAdapter: SpaceService {
     func switchTo(space: Space) {
         guard let yabai = yabaiPath else { return }
 
-        // Try switching by label first if available, then by index
         if let label = space.label, !label.isEmpty {
-            // Escape quotes in label if needed
+
             let escapedLabel = label.replacingOccurrences(of: "\"", with: "\\\"")
             _ = shell("\(yabai) -m space --focus \"\(escapedLabel)\"")
         } else {
@@ -64,8 +62,7 @@ class YabaiAdapter: SpaceService {
 
     func renameSpace(space: Space, to name: String) {
         guard let yabai = yabaiPath else { return }
-        // Escape the name for shell - specifically double quotes and spaces if needed,
-        // but since we wrap in quotes, we mainly need to escape quotes.
+
         let escapedName = name.replacingOccurrences(of: "\"", with: "\\\"")
         _ = shell("\(yabai) -m space \(space.index) --label \"\(escapedName)\"")
     }
@@ -101,7 +98,9 @@ class YabaiAdapter: SpaceService {
             if let result = String(data: data, encoding: .utf8), !result.isEmpty {
                 return result.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
             }
-        } catch {}
+        } catch {
+            Logger.shared.debug("YabaiAdapter: failed to run 'which yabai': \(error)")
+        }
 
         return nil
     }

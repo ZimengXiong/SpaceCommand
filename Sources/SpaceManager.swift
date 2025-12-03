@@ -1,7 +1,8 @@
+import AppKit
 import Combine
 import Foundation
 
-/// Central manager for space operations — supports both Yabai and Native modes
+/// Central manager for space operations
 class SpaceManager: ObservableObject {
     static let shared = SpaceManager()
 
@@ -13,6 +14,7 @@ class SpaceManager: ObservableObject {
 
     private let yabaiAdapter: YabaiAdapter
     private let nativeAdapter: NativeAdapter
+    private let logger = Logger.shared
     private var activeAdapter: SpaceService?
     private var cancellables = Set<AnyCancellable>()
 
@@ -35,17 +37,15 @@ class SpaceManager: ObservableObject {
             }
             .store(in: &cancellables)
 
-        print(
-            "SpaceCommand initialized - Yabai: \(isYabaiAvailable ? "✓" : "✗"), Native: \(isNativeAvailable ? "✓" : "✗")"
+        logger.info(
+            "SpaceCommand initialized - Yabai: \(isYabaiAvailable ? "Yes" : "No"), Native: \(isNativeAvailable ? "Yes" : "No")"
         )
         refreshSpaces()
     }
 
-    /// Update the active adapter based on current mode and availability
     private func updateActiveAdapter() {
         switch currentMode {
         case .auto:
-            // Prefer Yabai if available, fallback to Native
             if yabaiAdapter.isAvailable {
                 activeAdapter = yabaiAdapter
                 activeAdapterName = "Yabai"
@@ -74,32 +74,29 @@ class SpaceManager: ObservableObject {
             }
         }
 
-        print("SpaceCommand: Active adapter is now \(activeAdapterName)")
+        logger.info("SpaceCommand: Active adapter is now \(activeAdapterName)")
     }
 
     func refreshSpaces() {
         isYabaiAvailable = yabaiAdapter.isAvailable
         isNativeAvailable = nativeAdapter.isAvailable
 
-        // Re-evaluate adapter in case availability changed
         updateActiveAdapter()
 
         spaces = activeAdapter?.getSpaces() ?? []
     }
 
     func switchTo(space: Space) {
-        print("SpaceManager.switchTo called for space \(space.index) (id: \(space.id))")
-        print("SpaceManager: Using adapter \(activeAdapterName)")
+        logger.debug("SpaceManager.switchTo called for space \(space.index) (id: \(space.id))")
+        logger.debug("SpaceManager: Using adapter \(activeAdapterName)")
 
-        // Handle permissions for native adapter
         if let nativeAdapter = activeAdapter as? NativeAdapter {
             nativeAdapter.checkPermissions()
 
-            // If no permissions available, prompt user before switching
             if !nativeAdapter.hasAccessibilityPermissionPublic
                 && !nativeAdapter.hasAppleEventsPermissionPublic
             {
-                print("SpaceManager: No native permissions, requesting...")
+                logger.info("SpaceManager: No native permissions, requesting...")
                 DispatchQueue.main.async {
                     nativeAdapter.requestAccessibilityPermission()
                 }
@@ -108,13 +105,12 @@ class SpaceManager: ObservableObject {
         }
 
         activeAdapter?.switchTo(space: space)
-        print("SpaceManager: switchTo completed")
+        logger.debug("SpaceManager: switchTo completed")
     }
 
     func renameSpace(space: Space, to name: String) {
         activeAdapter?.renameSpace(space: space, to: name)
 
-        // Refresh to show updated name - give adapter a moment to process
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             self?.refreshSpaces()
         }
@@ -122,38 +118,31 @@ class SpaceManager: ObservableObject {
 
     func renameCurrentSpace(to name: String) {
         guard let current = activeAdapter?.getCurrentSpace() else {
-            print("SpaceManager: No current space found")
+            logger.warning("SpaceManager: No current space found")
             return
         }
         renameSpace(space: current, to: name)
     }
 
-    /// Switch to a space by index (1-based)
     func switchToSpace(by index: Int) {
-        print("SpaceManager.switchToSpace called for index \(index)")
+        logger.debug("SpaceManager.switchToSpace called for index \(index)")
 
-        // Refresh spaces to get latest state
         refreshSpaces()
 
-        // Find space by index
         guard let space = spaces.first(where: { $0.index == index }) else {
-            print("SpaceManager: No space found with index \(index)")
+            logger.warning("SpaceManager: No space found with index \(index)")
             return
         }
 
         switchTo(space: space)
     }
 
-    /// Check if any backend is available
     var hasAvailableBackend: Bool {
         return isYabaiAvailable || isNativeAvailable
     }
 
-    /// Ensure permissions are granted for native mode
-    /// Call this on app launch to prompt for permissions if needed
     func ensurePermissions() {
-        // Only prompt for native adapter permissions if we're using native mode
-        // or if yabai isn't available (auto mode will fall back to native)
+
         if currentMode == .native || (currentMode == .auto && !isYabaiAvailable) {
             nativeAdapter.ensurePermissionsOnFirstLaunch()
         }

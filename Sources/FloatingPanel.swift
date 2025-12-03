@@ -36,7 +36,7 @@ class FloatingPanel: NSPanel {
         self.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
         self.isOpaque = false
         self.backgroundColor = .clear
-        self.hasShadow = false  // We use SwiftUI shadow instead
+        self.hasShadow = false
         self.isMovableByWindowBackground = false
         self.hidesOnDeactivate = true
 
@@ -88,7 +88,6 @@ class FloatingPanel: NSPanel {
         self.orderOut(nil)
     }
 
-    // Allow the panel to become key window for keyboard input
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
 }

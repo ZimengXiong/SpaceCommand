@@ -10,11 +10,11 @@ struct OmniBoxView: View {
     @State private var selectedIndex = 0
     @FocusState private var isTextFieldFocused: Bool
     @State private var eventMonitor: Any?
+    private let logger = Logger.shared
 
-    // Sort spaces with current space first
     private func getSortedSpaces() -> [Space] {
         var spaces = spaceManager.spaces
-        // Move current space to top
+
         if let currentIndex = spaces.firstIndex(where: { $0.isCurrent }) {
             let current = spaces.remove(at: currentIndex)
             spaces.insert(current, at: 0)
@@ -32,16 +32,13 @@ struct OmniBoxView: View {
             fuzzyMatch(query: query, target: space.displayName.lowercased())
         }
 
-        // Sort: custom-named spaces first, then by match quality
         return matches.sorted { a, b in
             let aHasCustomName = a.label != nil && !a.label!.isEmpty
             let bHasCustomName = b.label != nil && !b.label!.isEmpty
 
-            // Custom-named spaces come first
             if aHasCustomName && !bHasCustomName { return true }
             if !aHasCustomName && bHasCustomName { return false }
 
-            // Among same type, prefer exact prefix matches
             let aName = a.displayName.lowercased()
             let bName = b.displayName.lowercased()
             let aStartsWith = aName.hasPrefix(query)
@@ -50,7 +47,6 @@ struct OmniBoxView: View {
             if aStartsWith && !bStartsWith { return true }
             if !aStartsWith && bStartsWith { return false }
 
-            // Keep current space at top within same category
             if a.isCurrent && !b.isCurrent { return true }
             if !a.isCurrent && b.isCurrent { return false }
 
@@ -132,9 +128,9 @@ struct OmniBoxView: View {
 
     @ViewBuilder
     private var modeIndicator: some View {
-        // Use the active adapter name from SpaceManager so the UI reflects the true backend
+
         let rawName = spaceManager.activeAdapterName
-        // Normalize display text
+
         let displayName = rawName.hasPrefix("None") ? "Offline" : rawName
 
         // Color green when an active backend is available, otherwise red
@@ -304,28 +300,27 @@ struct OmniBoxView: View {
         }
 
         guard !filtered.isEmpty else {
-            print("OmniBoxView: handleSubmit - no filtered spaces")
+            logger.debug("OmniBoxView: handleSubmit - no filtered spaces")
             return
         }
         guard selectedIndex >= 0 && selectedIndex < filtered.count else {
-            print("OmniBoxView: handleSubmit - invalid selectedIndex \(selectedIndex)")
+            logger.warning("OmniBoxView: handleSubmit - invalid selectedIndex \(selectedIndex)")
             return
         }
 
         let targetSpace = filtered[selectedIndex]
-        print(
+        logger.debug(
             "OmniBoxView: handleSubmit - switching to space \(targetSpace.index) (id: \(targetSpace.id), isCurrent: \(targetSpace.isCurrent))"
         )
 
         // Don't switch if already on the target space
         if targetSpace.isCurrent {
-            print("OmniBoxView: Already on target space, just dismissing")
+            logger.debug("OmniBoxView: Already on target space, just dismissing")
             onDismiss()
             return
         }
 
-        // IMPORTANT: Dismiss the panel FIRST, then switch spaces after a brief delay
-        // This ensures the panel doesn't capture the keyboard events meant for space switching
+        // Dismiss panel before switching to avoid capturing events
         onDismiss()
 
         // Small delay to let the panel fully hide before triggering space switch

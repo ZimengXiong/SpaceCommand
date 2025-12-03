@@ -2,8 +2,6 @@ import XCTest
 
 @testable import SpaceCommand
 
-// PersistenceManager tests removed as native mode support is no longer available.
-
 final class SpaceTests: XCTestCase {
     func testSpaceDisplayName_WithLabel() {
         let space = Space(id: "1", index: 1, label: "Work", isCurrent: false, uuid: nil)
@@ -22,7 +20,7 @@ final class SpaceTests: XCTestCase {
 }
 
 final class FuzzyMatchTests: XCTestCase {
-    // Test the fuzzy matching logic
+
     func testFuzzyMatch(query: String, target: String) -> Bool {
         if target.lowercased().contains(query.lowercased()) {
             return true
@@ -76,7 +74,7 @@ final class NativeModeSwitchingTests: XCTestCase {
 
     func testNativeAdapter_IsAvailable() {
         let adapter = NativeAdapter()
-        // Native adapter should be available on macOS
+
         let isAvailable = adapter.isAvailable
         XCTAssertTrue(isAvailable, "Native adapter should be available on macOS")
     }
@@ -85,10 +83,8 @@ final class NativeModeSwitchingTests: XCTestCase {
         let adapter = NativeAdapter()
         let spaces = adapter.getSpaces()
 
-        // Should return at least one space
         XCTAssertFalse(spaces.isEmpty, "Should return at least one space")
 
-        // Each space should have valid properties
         for space in spaces {
             XCTAssertFalse(space.id.isEmpty, "Space ID should not be empty")
             XCTAssertTrue(space.index >= 0, "Space index should be non-negative")
@@ -99,7 +95,6 @@ final class NativeModeSwitchingTests: XCTestCase {
         let adapter = NativeAdapter()
         let currentSpace = adapter.getCurrentSpace()
 
-        // Should return a space that is marked as current
         if let space = currentSpace {
             XCTAssertTrue(space.isCurrent, "Returned space should be marked as current")
         }
@@ -109,13 +104,12 @@ final class NativeModeSwitchingTests: XCTestCase {
         let adapter = NativeAdapter()
         let spaces = adapter.getSpaces()
 
-        // Find a non-fullscreen space with index 1-10
         let testSpace = spaces.first { !$0.isFullScreen && $0.index >= 1 && $0.index <= 10 }
 
         if let space = testSpace {
-            // This should trigger the keyboard simulation path
+
             adapter.switchTo(space: space)
-            // If no exception is thrown, the call succeeded
+
         } else {
             XCTSkip("No suitable space found for keyboard simulation test")
         }
@@ -125,13 +119,12 @@ final class NativeModeSwitchingTests: XCTestCase {
         let adapter = NativeAdapter()
         let spaces = adapter.getSpaces()
 
-        // Find a fullscreen space
         let testSpace = spaces.first { $0.isFullScreen }
 
         if let space = testSpace {
-            // This should trigger the AppleScript path
+
             adapter.switchTo(space: space)
-            // If no exception is thrown, the call succeeded
+
         } else {
             XCTSkip("No fullscreen space found for AppleScript test")
         }
@@ -148,7 +141,6 @@ final class NativeModeSwitchingTests: XCTestCase {
         let testName = "TestSpace_\(UUID().uuidString.prefix(8))"
         adapter.renameSpace(space: space, to: testName)
 
-        // Refresh spaces to see if name was saved
         let updatedSpaces = adapter.getSpaces()
         let renamedSpace = updatedSpaces.first { $0.id == space.id }
 
@@ -170,19 +162,16 @@ final class YabaiModeSwitchingTests: XCTestCase {
 
     func testYabaiAdapter_Availability() {
         let adapter = YabaiAdapter()
-        // This test will pass or fail based on whether yabai is installed
+
         let isAvailable = adapter.isAvailable
         print("Yabai available: \(isAvailable)")
 
-        // Don't fail the test based on yabai availability
-        // Just report the status
     }
 
     func testYabaiAdapter_GetSpaces_HandlesNoYabai() {
         let adapter = YabaiAdapter()
         let spaces = adapter.getSpaces()
 
-        // If yabai is not available, should return empty array
         if !adapter.isAvailable {
             XCTAssertTrue(spaces.isEmpty, "Should return empty array when yabai is not available")
         }
@@ -196,10 +185,8 @@ final class YabaiModeSwitchingTests: XCTestCase {
 
         let spaces = adapter.getSpaces()
 
-        // If yabai is available, should return spaces
         XCTAssertFalse(spaces.isEmpty, "Should return spaces when yabai is available")
 
-        // Validate space structure
         for space in spaces {
             XCTAssertFalse(space.id.isEmpty, "Space ID should not be empty")
             XCTAssertTrue(space.index >= 0, "Space index should be non-negative")
@@ -218,9 +205,8 @@ final class YabaiModeSwitchingTests: XCTestCase {
             XCTSkip("No space with label found")
         }
 
-        // This should try to switch by label first
         adapter.switchTo(space: spaceWithLabel)
-        // If no exception, call succeeded
+
     }
 
     func testYabaiAdapter_SwitchTo_WithIndex() {
@@ -234,9 +220,8 @@ final class YabaiModeSwitchingTests: XCTestCase {
             XCTSkip("No spaces available")
         }
 
-        // This should fall back to switching by index
         adapter.switchTo(space: space)
-        // If no exception, call succeeded
+
     }
 }
 
@@ -253,7 +238,6 @@ final class SpaceManagerIntegrationTests: XCTestCase {
         let manager = SpaceManager.shared
         let hasBackend = manager.hasAvailableBackend
 
-        // Should have at least native backend on macOS
         XCTAssertTrue(hasBackend, "Should have at least one available backend")
     }
 
@@ -274,9 +258,8 @@ final class SpaceManagerIntegrationTests: XCTestCase {
             XCTSkip("No spaces available for switch test")
         }
 
-        // This should delegate to the active adapter
         manager.switchTo(space: testSpace)
-        // If no exception, call succeeded
+
     }
 
     func testSpaceManager_RenameSpace() {
@@ -290,7 +273,6 @@ final class SpaceManagerIntegrationTests: XCTestCase {
         let testName = "ManagerTest_\(UUID().uuidString.prefix(8))"
         manager.renameSpace(space: space, to: testName)
 
-        // Give it a moment to process
         let expectation = self.expectation(description: "Space rename")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             manager.refreshSpaces()
