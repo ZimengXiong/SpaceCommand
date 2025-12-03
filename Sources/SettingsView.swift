@@ -354,6 +354,7 @@ struct SettingsView: View {
 // MARK: - General Settings Tab
 struct GeneralSettingsTab: View {
     @ObservedObject var settings = AppSettings.shared
+    @ObservedObject var spaceManager = SpaceManager.shared
     @State private var isRecordingHotkey = false
 
     var body: some View {
@@ -382,6 +383,33 @@ struct GeneralSettingsTab: View {
                     }
                 }
                 .pickerStyle(.menu)
+
+                // Backend status indicators
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Available Backends:")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                    }
+
+                    HStack(spacing: 16) {
+                        BackendStatusIndicator(
+                            name: "Yabai",
+                            isAvailable: spaceManager.isYabaiAvailable,
+                            isActive: spaceManager.activeAdapterName == "Yabai"
+                        )
+
+                        BackendStatusIndicator(
+                            name: "Native",
+                            isAvailable: spaceManager.isNativeAvailable,
+                            isActive: spaceManager.activeAdapterName == "Native"
+                        )
+                    }
+
+                }
+                .padding(.vertical, 4)
+
             } header: {
                 Text("Space Backend")
             }
@@ -394,6 +422,51 @@ struct GeneralSettingsTab: View {
             }
         }
         .formStyle(.grouped)
+        .onAppear {
+            spaceManager.refreshSpaces()
+        }
+    }
+}
+
+/// Indicator showing backend availability and active status
+struct BackendStatusIndicator: View {
+    let name: String
+    let isAvailable: Bool
+    let isActive: Bool
+
+    var body: some View {
+        HStack(spacing: 6) {
+            // Availability indicator
+            Circle()
+                .fill(isAvailable ? Color.green : Color.red)
+                .frame(width: 8, height: 8)
+
+            Text(name)
+                .font(.subheadline)
+                .foregroundColor(isAvailable ? .primary : .secondary)
+
+            // Active badge
+            if isActive {
+                Text("Active")
+                    .font(.caption2)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.accentColor)
+                    .clipShape(Capsule())
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(isActive ? Color.accentColor.opacity(0.1) : Color.primary.opacity(0.05))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(isActive ? Color.accentColor.opacity(0.3) : Color.clear, lineWidth: 1)
+        )
     }
 }
 
