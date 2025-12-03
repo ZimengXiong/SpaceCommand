@@ -135,15 +135,12 @@ struct OmniBoxView: View {
         // Use the active adapter name from SpaceManager so the UI reflects the true backend
         let rawName = spaceManager.activeAdapterName
         // Normalize display text
-        let displayName: String
-        if rawName.hasPrefix("None") {
-            displayName = "Offline"
-        } else {
-            displayName = rawName
-        }
+        let displayName = rawName.hasPrefix("None") ? "Offline" : rawName
 
         // Color green when an active backend is available, otherwise red
-        let modeColor: Color = (spaceManager.hasAvailableBackend && !rawName.hasPrefix("None")) ? Color.green : Color.red
+        let modeColor: Color =
+            (spaceManager.hasAvailableBackend && !rawName.hasPrefix("None"))
+            ? Color.green : Color.red
 
         HStack(spacing: 4) {
             Circle()

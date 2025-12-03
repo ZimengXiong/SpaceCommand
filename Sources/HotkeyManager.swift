@@ -3,7 +3,7 @@ import Carbon
 import Foundation
 
 // Make EventHotKeyID Hashable and Equatable
-extension EventHotKeyID: Hashable, Equatable {
+extension EventHotKeyID: @retroactive Hashable, @retroactive Equatable {
     public func hash(into hasher: inout Hasher) {
         hasher.combine(signature)
         hasher.combine(id)

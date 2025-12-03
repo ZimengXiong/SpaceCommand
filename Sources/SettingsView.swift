@@ -1,5 +1,7 @@
 import Carbon
+import ServiceManagement
 import SwiftUI
+import UserNotifications
 
 /// App version and build information
 struct AppInfo {
@@ -136,6 +138,21 @@ struct KeyboardShortcut: Codable, Equatable {
     }
 }
 
+/// Simple enum for space mode to avoid circular dependencies
+enum SpaceMode: String, Codable, CaseIterable {
+    case auto = "auto"
+    case yabai = "yabai"
+    case native = "native"
+
+    var displayName: String {
+        switch self {
+        case .auto: return "Auto (Yabai if available)"
+        case .yabai: return "Yabai"
+        case .native: return "Native macOS"
+        }
+    }
+}
+
 /// User preferences stored in UserDefaults
 class AppSettings: ObservableObject {
     static let shared = AppSettings()
@@ -164,7 +181,10 @@ class AppSettings: ObservableObject {
     }
 
     @Published var launchAtLogin: Bool {
-        didSet { defaults.set(launchAtLogin, forKey: Keys.launchAtLogin) }
+        didSet {
+            defaults.set(launchAtLogin, forKey: Keys.launchAtLogin)
+            updateLaunchAtLogin()
+        }
     }
 
     @Published var customHotkey: KeyboardShortcut {
@@ -177,7 +197,7 @@ class AppSettings: ObservableObject {
         }
     }
 
-    @Published var spaceMode: SpaceMode {
+    @Published var spaceMode: SpaceMode = .auto {
         didSet {
             defaults.set(spaceMode.rawValue, forKey: Keys.spaceMode)
         }
@@ -191,7 +211,7 @@ class AppSettings: ObservableObject {
             Keys.hotkeyEnabled: true,
             Keys.showInDock: false,
             Keys.launchAtLogin: false,
-            Keys.spaceMode: SpaceMode.auto.rawValue,
+            Keys.spaceMode: "auto",
         ])
 
         self.hotkeyEnabled = defaults.bool(forKey: Keys.hotkeyEnabled)
@@ -214,6 +234,18 @@ class AppSettings: ObservableObject {
         } else {
             self.spaceMode = .auto
         }
+
+        // Initialize notifications
+        requestNotificationPermission()
+    }
+
+    private func requestNotificationPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) {
+            granted, error in
+            if let error = error {
+                print("Failed to request notification permission: \(error)")
+            }
+        }
     }
 
     // MARK: - Actions
@@ -222,6 +254,73 @@ class AppSettings: ObservableObject {
             NSApp.setActivationPolicy(.regular)
         } else {
             NSApp.setActivationPolicy(.accessory)
+        }
+    }
+
+    private func updateLaunchAtLogin() {
+        let success = launchAtLogin ? enableLaunchAtLogin() : disableLaunchAtLogin()
+
+        if success {
+            showLoginNotification(success: true, enabled: launchAtLogin)
+        } else {
+            showLoginNotification(success: false, enabled: launchAtLogin)
+            // DO NOT revert the setting here to avoid infinite recursion loops in didSet
+            print("Failed to update launch at login preference.")
+        }
+    }
+
+    private func enableLaunchAtLogin() -> Bool {
+        do {
+            try SMAppService.mainApp.register()
+            print("Successfully enabled launch at login for \(AppInfo.bundleId) via SMAppService")
+            return true
+        } catch {
+            print("Failed to enable launch at login via SMAppService: \(error)")
+            return false
+        }
+    }
+
+    private func disableLaunchAtLogin() -> Bool {
+        do {
+            try SMAppService.mainApp.unregister()
+            print("Successfully disabled launch at login for \(AppInfo.bundleId) via SMAppService")
+            return true
+        } catch {
+            print("Failed to disable launch at login via SMAppService: \(error)")
+            return false
+        }
+    }
+
+    private func showLoginNotification(success: Bool, enabled: Bool) {
+        let content = UNMutableNotificationContent()
+
+        if success {
+            content.title = "SpaceCommand"
+            content.body =
+                enabled
+                ? "SpaceCommand added to system startup"
+                : "SpaceCommand removed from system startup"
+            content.sound = .default
+        } else {
+            content.title = "SpaceCommand"
+            content.body =
+                enabled
+                ? "Failed to add to system startup. Please check System Settings > General > Login Items"
+                : "Failed to remove from system startup"
+            content.sound = .default
+        }
+
+        let request = UNNotificationRequest(
+            identifier: "loginItemChange",
+            content: content,
+            trigger: nil
+        )
+
+        UNUserNotificationCenter.current().add(request) {
+            error in
+            if let error = error {
+                print("Failed to show notification: \(error)")
+            }
         }
     }
 
@@ -248,14 +347,13 @@ struct SettingsView: View {
                     Label("About", systemImage: "info.circle")
                 }
         }
-        .frame(width: 450, height: 320)
+        .frame(width: 600, height: 520)
     }
 }
 
 // MARK: - General Settings Tab
 struct GeneralSettingsTab: View {
     @ObservedObject var settings = AppSettings.shared
-    @ObservedObject var spaceManager = SpaceManager.shared
     @State private var isRecordingHotkey = false
 
     var body: some View {
@@ -276,64 +374,16 @@ struct GeneralSettingsTab: View {
             }
 
             Section {
-                Picker("Space Backend", selection: $settings.spaceMode) {
-                    ForEach(SpaceMode.allCases, id: \.self) { mode in
-                        HStack {
-                            Text(mode.displayName)
-                            if mode == .yabai && !spaceManager.isYabaiAvailable {
-                                Text("(unavailable)")
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        .tag(mode)
+                Picker("Mode", selection: $settings.spaceMode) {
+                    ForEach(SpaceMode.allCases, id: \.self) {
+                        mode in
+                        Text(mode.displayName)
+                            .tag(mode)
                     }
                 }
                 .pickerStyle(.menu)
-
-                // Status indicators
-                HStack {
-                    Text("Active Backend:")
-                    Spacer()
-                    HStack(spacing: 4) {
-                        Circle()
-                            .fill(spaceManager.hasAvailableBackend ? Color.green : Color.red)
-                            .frame(width: 8, height: 8)
-                        Text(spaceManager.activeAdapterName)
-                            .foregroundColor(.secondary)
-                    }
-                }
-
-                HStack {
-                    Text("Yabai Status:")
-                    Spacer()
-                    HStack(spacing: 4) {
-                        Circle()
-                            .fill(spaceManager.isYabaiAvailable ? Color.green : Color.orange)
-                            .frame(width: 8, height: 8)
-                        Text(spaceManager.isYabaiAvailable ? "Available" : "Not Found")
-                            .foregroundColor(.secondary)
-                    }
-                }
-
-                HStack {
-                    Text("Native Mode:")
-                    Spacer()
-                    HStack(spacing: 4) {
-                        Circle()
-                            .fill(spaceManager.isNativeAvailable ? Color.green : Color.red)
-                            .frame(width: 8, height: 8)
-                        Text(spaceManager.isNativeAvailable ? "Available" : "Unavailable")
-                            .foregroundColor(.secondary)
-                    }
-                }
             } header: {
                 Text("Space Backend")
-            } footer: {
-                Text(
-                    "Auto mode uses Yabai if available, otherwise falls back to native macOS APIs. Native mode requires Accessibility permissions for space switching."
-                )
-                .font(.caption)
-                .foregroundColor(.secondary)
             }
 
             Section {
@@ -344,7 +394,23 @@ struct GeneralSettingsTab: View {
             }
         }
         .formStyle(.grouped)
-        .padding()
+    }
+}
+
+struct StatusBadge: View {
+    let isActive: Bool
+    let text: String
+    let activeColor: Color
+    let inactiveColor: Color
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(isActive ? activeColor : inactiveColor)
+                .frame(width: 8, height: 8)
+            Text(text)
+                .foregroundColor(.secondary)
+        }
     }
 }
 
@@ -497,46 +563,63 @@ class ShortcutCaptureView: NSView {
 // MARK: - About Tab
 struct AboutTab: View {
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             Spacer()
 
-            // App icon
+            // App Icon
             ZStack {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
                     .fill(Color.accentColor.gradient)
-                    .frame(width: 64, height: 64)
+                    .frame(width: 96, height: 96)
+                    .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
 
                 Image(systemName: "square.grid.3x3.topleft.filled")
-                    .font(.system(size: 28, weight: .semibold))
+                    .font(.system(size: 44, weight: .semibold))
                     .foregroundColor(.white)
             }
+            .padding(.bottom, 10)
 
-            // App name and version
-            VStack(spacing: 4) {
+            // App Info
+            VStack(spacing: 8) {
                 Text(AppInfo.name)
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.title2.weight(.bold))
+
                 Text("Version \(AppInfo.fullVersion)")
-                    .font(.system(size: 12))
+                    .font(.subheadline)
                     .foregroundColor(.secondary)
             }
 
-            // System info
-            VStack(spacing: 2) {
-                Text(AppInfo.systemInfo)
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
-                Text(AppInfo.bundleId)
-                    .font(.system(size: 10, design: .monospaced))
-                    .foregroundColor(.secondary.opacity(0.7))
+            // Actions
+            Link(destination: URL(string: "https://github.com/ZimengXiong/SpaceCommand")!) {
+                HStack(spacing: 6) {
+                    Image(systemName: "link")
+                    Text("View on GitHub")
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
             }
+            .buttonStyle(.bordered)
+            .controlSize(.large)
 
             Spacer()
 
-            Text(AppInfo.copyright)
-                .font(.system(size: 10))
-                .foregroundColor(.secondary)
+            // Footer Info
+            VStack(spacing: 4) {
+                Text(AppInfo.systemInfo)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                Text(AppInfo.bundleId)
+                    .font(.caption.monospaced())
+                    .foregroundColor(.secondary.opacity(0.6))
+
+                Text(AppInfo.copyright)
+                    .font(.caption2)
+                    .foregroundColor(.secondary.opacity(0.6))
+                    .padding(.top, 8)
+            }
+            .padding(.bottom, 30)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding()
     }
 }

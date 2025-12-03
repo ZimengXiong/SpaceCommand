@@ -20,17 +20,13 @@ class SpaceManager: ObservableObject {
         self.yabaiAdapter = YabaiAdapter()
         self.nativeAdapter = NativeAdapter()
 
-        
         self.currentMode = AppSettings.shared.spaceMode
 
-        
         self.isYabaiAvailable = yabaiAdapter.isAvailable
         self.isNativeAvailable = nativeAdapter.isAvailable
 
-        
         updateActiveAdapter()
 
-        
         AppSettings.shared.$spaceMode
             .sink { [weak self] newMode in
                 self?.currentMode = newMode
