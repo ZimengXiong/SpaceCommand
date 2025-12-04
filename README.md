@@ -5,6 +5,7 @@
 
 A macOS utility for navigating and managing spaces/workspaces by name with support for both Yabai and native macOS modes.
 
+<img src="FloatingWindowSS.png" alt="SpaceCommand Icon" height="400">
 
 ## Table of Contents
 - [Features](#features)
@@ -20,9 +21,23 @@ A macOS utility for navigating and managing spaces/workspaces by name with suppo
 - [Project Structure](#project-structure)
 
 ## Features
-- Quickly switch to spaces by name
-- Rename spaces
-- Works with both Yabai and native macOS space management
+
+<details>
+<summary>Switch to spaces by name</summary>
+
+![Navigate Spaces Demo](NavigateSpaces.gif)
+
+Quickly navigate to any space via fuzzyfind
+
+</details>
+
+<details>
+<summary>Rename spaces</summary>
+
+![Rename Spaces Demo](RenameSpaces.gif)
+
+Easily rename your spaces
+</details>
 
 ## Installation
 
