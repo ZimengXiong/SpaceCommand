@@ -55,17 +55,17 @@ struct AboutTab: View {
 }
 
 struct AppInfo {
-    static let version = "1.0.0"
-    static let build = "1"
+    static let version = "0.1.0"
+    static let build = "6"
     static let name = "SpaceCommand"
-    static let bundleId = "com.SpaceCommand.SpaceCommand"
+    static let bundleId = "com.ZimengXiong.SpaceCommand"
 
     static var fullVersion: String {
         "\(version) (\(build))"
     }
 
     static var copyright: String {
-        "© 2025 SpaceCommand"
+        "© 2025 Zimeng Xiong"
     }
 
     static var systemInfo: String {

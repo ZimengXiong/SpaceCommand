@@ -1,6 +1,6 @@
 name: SpaceCommand
 options:
-  bundleIdPrefix: com.SpaceCommand
+  bundleIdPrefix: com.ZimengXiong
   deploymentTarget:
     macOS: "14.0"
 
@@ -14,13 +14,11 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: Resources/Info.plist
         INFOPLIST_KEY_LSUIElement: true
-        INFOPLIST_KEY_NSHumanReadableCopyright: "Copyright © 2024 SpaceCommand"
+        INFOPLIST_KEY_NSHumanReadableCopyright: "Copyright © 2025 Zimeng Xiong"
         ENABLE_USER_SCRIPT_SANDBOXING: NO
         CODE_SIGN_ENTITLEMENTS: Resources/SpaceCommand.entitlements
         CODE_SIGN_IDENTITY: "-"
-        # Bridging header for native macOS Private APIs
         SWIFT_OBJC_BRIDGING_HEADER: Sources/Bridging-Header.h
-        # Link frameworks: Carbon for hotkeys, CoreGraphics for private space APIs
         OTHER_LDFLAGS: ["-framework", "Carbon", "-framework", "CoreGraphics"]
-        PRODUCT_BUNDLE_IDENTIFIER: com.SpaceCommand.SpaceCommand
+        PRODUCT_BUNDLE_IDENTIFIER: com.ZimengXiong.SpaceCommand
         MACOSX_DEPLOYMENT_TARGET: "14.0"

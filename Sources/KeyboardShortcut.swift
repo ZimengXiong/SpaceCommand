@@ -2,7 +2,7 @@ import Foundation
 
 struct KeyboardShortcut: Codable, Equatable {
     var key: UInt32
-    var modifiers: [String]  // "cmd", "shift", "option", "control"
+    var modifiers: [String]
 
     var displayString: String {
         var result = ""
