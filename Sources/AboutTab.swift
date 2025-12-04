@@ -5,17 +5,12 @@ struct AboutTab: View {
         VStack(spacing: 20) {
             Spacer()
 
-            ZStack {
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(Color.accentColor.gradient)
-                    .frame(width: 96, height: 96)
-                    .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
-
-                Image(systemName: "square.grid.3x3.topleft.filled")
-                    .font(.system(size: 44, weight: .semibold))
-                    .foregroundColor(.white)
-            }
-            .padding(.bottom, 10)
+            Image(nsImage: NSApplication.shared.applicationIconImage)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 128, height: 128)
+                .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+                .padding(.bottom, 10)
 
             VStack(spacing: 8) {
                 Text(AppInfo.name)

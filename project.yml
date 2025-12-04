@@ -8,7 +8,7 @@ targets:
   SpaceCommand:
     type: application
     platform: macOS
-    sources: [Sources]
+    sources: [Sources, Resources]
     settings:
       base:
         GENERATE_INFOPLIST_FILE: NO

@@ -105,10 +105,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
 
         if let button = statusItem?.button {
-            button.image = NSImage(
-                systemSymbolName: "square.grid.3x3.topleft.filled",
-                accessibilityDescription: "SpaceCommand")
-            button.image?.size = NSSize(width: 18, height: 18)
+            if let image = NSImage(
+                contentsOfFile: Bundle.main.path(forResource: "AppIcon_18x18", ofType: "png") ?? "")
+            {
+                image.size = NSSize(width: 18, height: 18)
+                button.image = image
+            } else {
+                button.image = NSImage(
+                    systemSymbolName: "square.grid.3x3.topleft.filled",
+                    accessibilityDescription: "SpaceCommand")
+                button.image?.size = NSSize(width: 18, height: 18)
+            }
         }
 
         let menu = NSMenu()

@@ -1,0 +1,66 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Definitions for Gradients and Filters -->
+    <defs>
+        <!-- Dark Minimalist Gradient -->
+        <linearGradient id="bgGradient" x1="0" y1="0" x2="512" y2="512"
+            gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#3a3a3c" /> <!-- Dark Grey -->
+            <stop offset="100%" stop-color="#151516" /> <!-- Almost Black -->
+        </linearGradient>
+
+        <!-- Subtle Shadow for general elements -->
+        <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.4" />
+        </filter>
+
+        <!-- Deeper shadow for the center card to visually separate it from back cards -->
+        <filter id="centerShadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="6" stdDeviation="16" flood-color="#000000" flood-opacity="0.6" />
+        </filter>
+    </defs>
+
+    <!-- 1. Background Squircle -->
+    <rect x="0" y="0" width="512" height="512" rx="115" fill="url(#bgGradient)" />
+
+    <!-- 3. The Label Element (Detailed) -->
+    <g transform="translate(206, 300)">
+        <!-- Connection String -->
+        <path d="M50 -20 L50 0" stroke="#937A62" stroke-width="6" stroke-linecap="round" />
+
+        <!-- Tag Shape -->
+        <path
+            d="M0 10C0 4.477 4.477 0 10 0H90C95.523 0 100 4.477 100 10V60C100 65.523 95.523 70 90 70H10C4.477 70 0 65.523 0 60V10Z"
+            fill="#F5C518" filter="url(#softShadow)" />
+
+        <!-- Detail: Top Highlight/Rim -->
+        <path d="M0 10C0 4.477 4.477 0 10 0H90C95.523 0 100 4.477 100 10V25H0V10Z" fill="#ffffff"
+            fill-opacity="0.2" />
+
+        <!-- Detail: Text Lines (Simulating writing) -->
+        <rect x="20" y="35" width="60" height="6" rx="3" fill="#B38600" fill-opacity="0.6" />
+        <rect x="20" y="48" width="40" height="6" rx="3" fill="#B38600" fill-opacity="0.4" />
+
+
+    </g>
+
+    <!-- 2. The Spaces (Layered Layout) -->
+    <g transform="translate(0, 37)">
+        <!-- Space 1 (Left, Background) -->
+        <!-- Widened and shifted right to tuck behind the center space -->
+        <rect x="40" y="135" width="160" height="120" rx="12" fill="#8E8E93" fill-opacity="0.9" />
+
+        <!-- Space 3 (Right, Background) -->
+        <!-- Widened and shifted left to tuck behind the center space -->
+        <rect x="312" y="135" width="160" height="120" rx="12" fill="#8E8E93" fill-opacity="0.9" />
+
+        <!-- Space 2 (Center, Active/Foreground) -->
+        <!-- Bright, with a stronger shadow to pop out from the back layers -->
+        <rect x="176" y="125" width="160" height="120" rx="16" fill="#EAEAEA"
+            filter="url(#centerShadow)" />
+
+        <!-- Content hint inside active space -->
+        <rect x="180" y="130" width="151" height="110" rx="8" fill="#3a3a3c" fill-opacity="0.1" />
+    </g>
+
+
+</svg>
