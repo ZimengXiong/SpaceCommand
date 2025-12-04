@@ -58,14 +58,33 @@ class YabaiAdapter: SpaceService {
     }
 
     func switchTo(space: Space) {
-        guard let yabai = yabaiPath else { return }
+        guard let yabai = yabaiPath else {
+            logger.error("YabaiAdapter: yabaiPath is nil, cannot switch spaces")
+            return
+        }
 
-        if let label = space.label, !label.isEmpty {
+        logger.debug(
+            "YabaiAdapter: Attempting to switch to space \(space.index) with label '\(space.label ?? "nil")'"
+        )
 
-            let escapedLabel = label.replacingOccurrences(of: "\"", with: "\\\"")
-            _ = shell("\(yabai) -m space --focus \"\(escapedLabel)\"")
-        } else {
-            _ = shell("\(yabai) -m space --focus \(space.index)")
+        logger.debug("YabaiAdapter: Using index-based switch to \(space.index)")
+        let result = shell("\(yabai) -m space --focus \(space.index)")
+
+        if result == nil || result?.isEmpty == false {
+            logger.error(
+                "YabaiAdapter: Index-based switch failed or returned unexpected result: \(result ?? "nil")"
+            )
+
+            if let label = space.label, !label.isEmpty {
+                let escapedLabel = label.replacingOccurrences(of: "\"", with: "\\\"")
+                logger.debug(
+                    "YabaiAdapter: Trying label-based fallback switch to '\(escapedLabel)'")
+                let labelResult = shell("\(yabai) -m space --focus \"\(escapedLabel)\"")
+                if labelResult == nil || labelResult?.isEmpty == false {
+                    logger.error(
+                        "YabaiAdapter: Label-based switch also failed: \(labelResult ?? "nil")")
+                }
+            }
         }
     }
 

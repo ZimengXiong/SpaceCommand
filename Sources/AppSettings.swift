@@ -14,8 +14,6 @@ class AppSettings: ObservableObject {
 
     private enum Keys {
         static let hotkeyEnabled = "hotkeyEnabled"
-        static let showInDock = "showInDock"
-        static let showMenuBarIcon = "showMenuBarIcon"
         static let launchAtLogin = "launchAtLogin"
         static let customHotkey = "customHotkey"
         static let spaceMode = "spaceMode"
@@ -32,20 +30,6 @@ class AppSettings: ObservableObject {
     @Published var spaceLabels: [String: String] = [:] {
         didSet {
             defaults.set(spaceLabels, forKey: Keys.spaceLabels)
-        }
-    }
-
-    @Published var showInDock: Bool = false {
-        didSet {
-            defaults.set(showInDock, forKey: Keys.showInDock)
-            updateDockVisibility()
-        }
-    }
-
-    @Published var showMenuBarIcon: Bool = true {
-        didSet {
-            defaults.set(showMenuBarIcon, forKey: Keys.showMenuBarIcon)
-            updateMenuBarIconVisibility()
         }
     }
 
@@ -83,8 +67,6 @@ class AppSettings: ObservableObject {
             defaults.register(
                 defaults: [
                     Keys.hotkeyEnabled: true,
-                    Keys.showInDock: false,
-                    Keys.showMenuBarIcon: true,
                     Keys.launchAtLogin: false,
                     Keys.spaceMode: "auto",
                     Keys.customHotkey: encoded,
@@ -93,8 +75,6 @@ class AppSettings: ObservableObject {
             defaults.register(
                 defaults: [
                     Keys.hotkeyEnabled: true,
-                    Keys.showInDock: false,
-                    Keys.showMenuBarIcon: true,
                     Keys.launchAtLogin: false,
                     Keys.spaceMode: "auto",
                 ])
@@ -103,9 +83,6 @@ class AppSettings: ObservableObject {
 
     private func loadSettings() {
         hotkeyEnabled = defaults.bool(forKey: Keys.hotkeyEnabled)
-        showInDock = defaults.bool(forKey: Keys.showInDock)
-
-        showMenuBarIcon = defaults.bool(forKey: Keys.showMenuBarIcon)
         launchAtLogin = defaults.bool(forKey: Keys.launchAtLogin)
         loadCustomHotkey()
         loadSpaceMode()
@@ -182,16 +159,6 @@ class AppSettings: ObservableObject {
         notificationCenter.post(name: .hotkeyDidChange, object: customHotkey)
     }
 
-    private func updateDockVisibility() {
-        if showInDock {
-            NSApp.setActivationPolicy(.regular)
-            logger.info("App will show in Dock")
-        } else {
-            NSApp.setActivationPolicy(.accessory)
-            logger.info("App will hide from Dock")
-        }
-    }
-
     private func updateLaunchAtLogin() {
         let operation = launchAtLogin ? "enable" : "disable"
         logger.info("Attempting to \(operation) launch at login")
@@ -205,12 +172,6 @@ class AppSettings: ObservableObject {
             showLoginNotification(success: false, enabled: launchAtLogin)
             logger.error("Failed to \(operation) launch at login")
         }
-    }
-
-    private func updateMenuBarIconVisibility() {
-
-        notificationCenter.post(name: .menuBarIconVisibilityDidChange, object: showMenuBarIcon)
-        logger.info("Menu bar icon visibility changed: \(showMenuBarIcon)")
     }
 
     private func enableLaunchAtLogin() -> Bool {
@@ -267,8 +228,6 @@ class AppSettings: ObservableObject {
 
     func resetToDefaults() {
         hotkeyEnabled = true
-        showInDock = false
-        showMenuBarIcon = true
         launchAtLogin = false
         customHotkey = KeyboardShortcut.cmdShiftSpace
         spaceMode = .auto

@@ -11,12 +11,4 @@ int _CGSDefaultConnection(void);
 
 id CGSCopyManagedDisplaySpaces(int conn);
 
-id CGSCopyActiveMenuBarDisplayIdentifier(int conn);
-
-void CGSAddWindowsToSpaces(int cid, CFArrayRef windows, CFArrayRef spaces);
-
-void CGSRemoveWindowsFromSpaces(int cid, CFArrayRef windows, CFArrayRef spaces);
-
-void CGSMoveSpaceToDisplay(int cid, int spaceId, int displayId);
-
 #endif /* Bridging_Header_h */

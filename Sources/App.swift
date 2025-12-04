@@ -16,13 +16,13 @@ struct SpaceCommandApp: App {
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var floatingPanel: FloatingPanel?
     private var hotkeyManager: HotkeyManager?
-    private var statusItem: NSStatusItem?
     private var settingsWindow: NSWindow?
     private var hotkeyObserver: NSObjectProtocol?
-    private var menuBarIconObserver: NSObjectProtocol?
     private let logger = Logger.shared
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+
+        NSApp.setActivationPolicy(.accessory)
 
         let spaceManager = SpaceManager.shared
 
@@ -62,92 +62,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         setupSpaceNumberHotkeys()
 
-        setupMenuBar()
-
-        if !settings.showMenuBarIcon {
-            if let existing = statusItem {
-                NSStatusBar.system.removeStatusItem(existing)
-                statusItem = nil
-            }
-        }
-
-        menuBarIconObserver = NotificationCenter.default.addObserver(
-            forName: .menuBarIconVisibilityDidChange,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            guard let self = self else { return }
-            guard let show = notification.object as? Bool else { return }
-
-            if show {
-                if self.statusItem == nil {
-                    self.setupMenuBar()
-                }
-            } else {
-                if let existing = self.statusItem {
-                    NSStatusBar.system.removeStatusItem(existing)
-                    self.statusItem = nil
-                }
-            }
-        }
-
         logger.info("SpaceCommand v\(AppInfo.version) launched. Press Cmd+Shift+Space to activate.")
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         hotkeyManager?.unregisterAll()
-        if let observer = menuBarIconObserver {
-            NotificationCenter.default.removeObserver(observer)
-        }
-    }
-
-    private func setupMenuBar() {
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-
-        if let button = statusItem?.button {
-            if let image = NSImage(
-                contentsOfFile: Bundle.main.path(forResource: "AppIcon_18x18", ofType: "png") ?? "")
-            {
-                image.size = NSSize(width: 18, height: 18)
-                button.image = image
-            } else {
-                button.image = NSImage(
-                    systemSymbolName: "square.grid.3x3.topleft.filled",
-                    accessibilityDescription: "SpaceCommand")
-                button.image?.size = NSSize(width: 18, height: 18)
-            }
-        }
-
-        let menu = NSMenu()
-
-        let titleItem = NSMenuItem(
-            title: "SpaceCommand v\(AppInfo.version)", action: nil, keyEquivalent: "")
-        titleItem.isEnabled = false
-        menu.addItem(titleItem)
-
-        menu.addItem(NSMenuItem.separator())
-
-        let openItem = NSMenuItem(
-            title: "Open Switcher", action: #selector(openSwitcher), keyEquivalent: " ")
-        openItem.keyEquivalentModifierMask = [.command, .shift]
-        openItem.target = self
-        menu.addItem(openItem)
-
-        menu.addItem(NSMenuItem.separator())
-
-        let settingsItem = NSMenuItem(
-            title: "Settings...", action: #selector(openSettingsMenu), keyEquivalent: ",")
-        settingsItem.target = self
-        menu.addItem(settingsItem)
-
-        menu.addItem(NSMenuItem.separator())
-
-        let quitItem = NSMenuItem(
-            title: "Quit SpaceCommand", action: #selector(quitApp), keyEquivalent: "q")
-        quitItem.target = self
-        menu.addItem(quitItem)
-
-        statusItem?.menu = menu
     }
 
     @objc private func openSwitcher() {
