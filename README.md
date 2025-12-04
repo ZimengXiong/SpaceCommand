@@ -3,7 +3,7 @@
 # SpaceCommand v0.1.1
 
 
-A macOS utility for navigating and managing spaces/workspaces by name with support for both Yabai and native macOS modes.
+A macOS utility for navigating and managing spaces/virtual desktop by name with support for both Yabai and native macOS.
 
 <img src="FloatingWindowSS.png" alt="SpaceCommand Icon" height="400">
 
@@ -23,20 +23,18 @@ A macOS utility for navigating and managing spaces/workspaces by name with suppo
 ## Features
 
 <details>
-<summary>Switch to spaces by name</summary>
+<summary>Quickly navigate to spaces by its name</summary>
 
 ![Navigate Spaces Demo](NavigateSpaces.gif)
 
-Quickly navigate to any space via fuzzyfind
 
 </details>
 
 <details>
-<summary>Rename spaces</summary>
+<summary>Easily name your spaces</summary>
 
 ![Rename Spaces Demo](RenameSpaces.gif)
 
-Easily rename your spaces
 </details>
 
 ## Installation
@@ -110,7 +108,7 @@ This provides consistent labeling across both backends and ensures labels persis
 <details>
 <summary>Yabai Backend</summary>
 
-The Yabai backend uses the [yabai](https://github.com/koekeishiya/yabai) window management tool to interact with macOS spaces. It provides:
+The Yabai backend uses the [yabai](https://github.com/koekeishiya/yabai) window management tool to interact with macOS spaces. It
 
 - Uses Yabai's CLI interface to query and switch spaces
 - Imports Yabai's native labels into app storage on first use
