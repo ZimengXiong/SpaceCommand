@@ -55,8 +55,8 @@ struct AboutTab: View {
 }
 
 struct AppInfo {
-    static let version = "0.1.0"
-    static let build = "6"
+    static let version = "0.1.1"
+    static let build = "7"
     static let name = "SpaceCommand"
     static let bundleId = "com.ZimengXiong.SpaceCommand"
 

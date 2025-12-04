@@ -16,4 +16,7 @@ sed -i '' "s/static let build = \".*\"/static let build = \"$BUILD\"/" ../Source
 echo "Updating Resources/Info.plist..."
 python3 update_plist.py ../Resources/Info.plist $VERSION $BUILD
 
+echo "Updating README.md..."
+sed -i '' "s/# SpaceCommand v[0-9]*\.[0-9]*\.[0-9]*/# SpaceCommand v$VERSION/" ../README.md
+
 echo "Version sync complete: $VERSION (build $BUILD)"
