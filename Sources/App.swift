@@ -8,7 +8,7 @@ struct SpaceCommandApp: App {
     var body: some Scene {
 
         Settings {
-            EmptyView()
+            SettingsView()
         }
     }
 }
