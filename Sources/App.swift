@@ -55,11 +55,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        hotkeyManager?.register(key: UInt32(kVK_ANSI_Comma), modifierFlags: [.command]) {
-            [weak self] in
-            self?.openSettingsMenu()
-        }
-
         setupSpaceNumberHotkeys()
 
         logger.info("SpaceCommand v\(AppInfo.version) launched. Press Cmd+Shift+Space to activate.")
