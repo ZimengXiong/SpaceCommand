@@ -46,6 +46,8 @@ brew install --cask ZimengXiong/SpaceCommand
 
 > **Note**: [Yabai](https://github.com/koekeishiya/yabai) is preferred over native macOS backend for better reliability and performance. See [Backends](#Backends) for details.
 
+> **Note**: If you are not using Yabai, you must have the default keyboard shortcuts set for changing spaces (Ctrl+1..0 for spaces 1 through 10, respectively)
+
 ## Build from Source
 
 #### Prerequisites
