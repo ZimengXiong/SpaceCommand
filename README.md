@@ -40,10 +40,11 @@ A macOS utility for navigating and managing spaces/virtual desktop by name with 
 ## Installation
 
 > [!IMPORTANT]
-> If you are not using Yabai, you must have the default keyboard shortcuts set for changing spaces (Ctrl+1..0 for spaces 1 through 10, respectively)
+> There is no onboarding UI. The app will launch without a dock icon or menubar icon. Press "Command + Shift + Space" to activate it, then "Command + ," for settings.
 
 > [!IMPORTANT]
-> There is no onboarding UI. The app will launch without a dock icon or menubar icon. Press "Command + Shift + Space" to activate it, then "Command + ," for settings.
+> If you are not using Yabai, you must have the default keyboard shortcuts set for changing spaces (Ctrl+1..0 for spaces 1 through 10, respectively)
+
 <details>
 <summary>Set your keyboard shortcuts to the following (via Command+Space, search "Keyboard Shortcuts", navigate to "Mission Control" in the left pane)</summary>
 
