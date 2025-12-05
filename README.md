@@ -46,6 +46,9 @@ A macOS utility for navigating and managing spaces/virtual desktop by name with 
 > There is no onboarding UI. The app will launch without a dock icon or menubar icon. Press "Command + Shift + Space" to activate it, then "Command + ," for settings.
 <details>
 <summary>Set your keyboard shortcuts to the following (via Command+Space, search "Keyboard Shortcuts", navigate to "Mission Control" in the left pane)</summary>
+
+![](EnabledKeyboardShortcuts.png)
+
 </details>
 
 ### Homebrew (Recommended)
@@ -60,7 +63,6 @@ sudo xattr -r -d 'com.apple.quarantine' /Applications/SpaceCommand.app
 
 
 
-![](EnabledKeyboardShortcuts.png)
 
 
 ## Build from Source
