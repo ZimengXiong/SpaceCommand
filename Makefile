@@ -5,6 +5,8 @@ build-prod: gen
 	xcodebuild -project SpaceCommand.xcodeproj -scheme SpaceCommand -configuration Release \
 		CONFIGURATION_BUILD_DIR=$(BUILD_DIR)/Release \
 		build
+	chmod +x $(BUILD_DIR)/Release/SpaceCommand.app/Contents/MacOS/SpaceCommand
+	ditto -c -k --keepParent $(BUILD_DIR)/Release/SpaceCommand.app $(BUILD_DIR)/SpaceCommand.app.zip
 
 BUILD_DIR = $(CURDIR)/build
 
