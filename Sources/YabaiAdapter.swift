@@ -10,16 +10,20 @@ class YabaiAdapter: SpaceService {
     private let logger = Logger.shared
 
     var isAvailable: Bool {
-        guard yabaiPath != nil else { return false }
-        let result = shell("\(yabaiPath!) -m query --spaces")
-        return result != nil && !result!.isEmpty
+        get async {
+            guard yabaiPath != nil else { return false }
+            let result = await shell("\(yabaiPath!) -m query --spaces")
+            return result != nil && !result!.isEmpty
+        }
     }
 
-    var canPerformOperations: Bool { return isAvailable }
+    var canPerformOperations: Bool {
+        get async { return await isAvailable }
+    }
 
-    func getSpaces() -> [Space] {
+    func getSpaces() async -> [Space] {
         guard let yabai = yabaiPath,
-            let output = shell("\(yabai) -m query --spaces"),
+            let output = await shell("\(yabai) -m query --spaces"),
             let data = output.data(using: .utf8)
         else {
             return []
@@ -53,48 +57,30 @@ class YabaiAdapter: SpaceService {
         }
     }
 
-    func getCurrentSpace() -> Space? {
-        return getSpaces().first { $0.isCurrent }
+    func getCurrentSpace() async -> Space? {
+        return await getSpaces().first { $0.isCurrent }
     }
 
-    func switchTo(space: Space) {
-        guard let yabai = yabaiPath else {
-            logger.error("YabaiAdapter: yabaiPath is nil, cannot switch spaces")
-            return
-        }
+    func switchTo(space: Space) async {
+        guard let yabai = yabaiPath else { return }
 
-        logger.debug(
-            "YabaiAdapter: Attempting to switch to space \(space.index) with label '\(space.label ?? "nil")'"
-        )
-
-        logger.debug("YabaiAdapter: Using index-based switch to \(space.index)")
-        let result = shell("\(yabai) -m space --focus \(space.index)")
+        let result = await shell("\(yabai) -m space --focus \(space.index)")
 
         if result == nil || result?.isEmpty == false {
-            logger.error(
-                "YabaiAdapter: Index-based switch failed or returned unexpected result: \(result ?? "nil")"
-            )
-
             if let label = space.label, !label.isEmpty {
                 let escapedLabel = label.replacingOccurrences(of: "\"", with: "\\\"")
-                logger.debug(
-                    "YabaiAdapter: Trying label-based fallback switch to '\(escapedLabel)'")
-                let labelResult = shell("\(yabai) -m space --focus \"\(escapedLabel)\"")
-                if labelResult == nil || labelResult?.isEmpty == false {
-                    logger.error(
-                        "YabaiAdapter: Label-based switch also failed: \(labelResult ?? "nil")")
-                }
+                _ = await shell("\(yabai) -m space --focus \"\(escapedLabel)\"")
             }
         }
     }
 
-    func renameSpace(space: Space, to name: String) {
+    func renameSpace(space: Space, to name: String) async {
         AppSettings.shared.setLabel(for: space.id, label: name)
 
         guard let yabai = yabaiPath else { return }
 
         let escapedName = name.replacingOccurrences(of: "\"", with: "\\\"")
-        _ = shell("\(yabai) -m space \(space.index) --label \"\(escapedName)\"")
+        _ = await shell("\(yabai) -m space \(space.index) --label \"\(escapedName)\"")
     }
 
     private static func findYabai() -> String? {
@@ -126,30 +112,34 @@ class YabaiAdapter: SpaceService {
                 return result.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
             }
         } catch {
-            Logger.shared.debug("YabaiAdapter: failed to run 'which yabai': \(error)")
+            // Ignore - yabai not found
         }
 
         return nil
     }
 
-    private func shell(_ command: String) -> String? {
-        let task = Process()
-        let pipe = Pipe()
+    private func shell(_ command: String) async -> String? {
+        return await withCheckedContinuation { continuation in
+            let task = Process()
+            let pipe = Pipe()
 
-        task.standardOutput = pipe
-        task.standardError = pipe
-        task.arguments = ["-c", command]
-        task.launchPath = "/bin/bash"
-        task.standardInput = nil
+            task.standardOutput = pipe
+            task.standardError = pipe
+            task.arguments = ["-c", command]
+            task.launchPath = "/bin/bash"
+            task.standardInput = nil
 
-        do {
-            try task.run()
-            task.waitUntilExit()
+            task.terminationHandler = { process in
+                let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                let output = String(data: data, encoding: .utf8)
+                continuation.resume(returning: output)
+            }
 
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            return String(data: data, encoding: .utf8)
-        } catch {
-            return nil
+            do {
+                try task.run()
+            } catch {
+                continuation.resume(returning: nil)
+            }
         }
     }
 }

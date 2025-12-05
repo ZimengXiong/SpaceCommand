@@ -10,7 +10,6 @@ struct OmniBoxView: View {
     @State private var selectedIndex = 0
     @FocusState private var isTextFieldFocused: Bool
     @State private var eventMonitor: Any?
-    private let logger = Logger.shared
 
     private func getSortedSpaces() -> [Space] {
         var spaces = spaceManager.spaces
@@ -245,7 +244,7 @@ struct OmniBoxView: View {
 
     private func handleAppear() {
         isTextFieldFocused = true
-        spaceManager.refreshSpaces()
+        Task { await spaceManager.refreshSpaces() }
         selectedIndex = 0
         searchText = ""
 
@@ -305,30 +304,21 @@ struct OmniBoxView: View {
             return
         }
 
-        guard !filtered.isEmpty else {
-            logger.debug("OmniBoxView: handleSubmit - no filtered spaces")
-            return
-        }
-        guard selectedIndex >= 0 && selectedIndex < filtered.count else {
-            logger.warning("OmniBoxView: handleSubmit - invalid selectedIndex \(selectedIndex)")
-            return
-        }
+        guard !filtered.isEmpty else { return }
+        guard selectedIndex >= 0 && selectedIndex < filtered.count else { return }
 
         let targetSpace = filtered[selectedIndex]
-        logger.debug(
-            "OmniBoxView: handleSubmit - switching to space \(targetSpace.index) (id: \(targetSpace.id), isCurrent: \(targetSpace.isCurrent))"
-        )
 
         if targetSpace.isCurrent {
-            logger.debug("OmniBoxView: Already on target space, just dismissing")
             onDismiss()
             return
         }
 
         onDismiss()
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            self.spaceManager.switchTo(space: targetSpace)
+        Task {
+            try? await Task.sleep(nanoseconds: 100_000_000)
+            await self.spaceManager.switchTo(space: targetSpace)
         }
     }
 
@@ -340,7 +330,7 @@ struct OmniBoxView: View {
             spaceManager.spaces.first(where: { $0.isCurrent }) ?? spaceManager.spaces.first
         guard let space = currentSpace else { return }
 
-        spaceManager.renameSpace(space: space, to: nameToSave)
+        Task { await spaceManager.renameSpace(space: space, to: nameToSave) }
         searchText = ""
         selectedIndex = 0
     }

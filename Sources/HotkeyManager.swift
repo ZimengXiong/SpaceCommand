@@ -2,7 +2,7 @@ import AppKit
 import Carbon
 import Foundation
 
-extension EventHotKeyID: Hashable {
+extension EventHotKeyID: @retroactive Hashable, @retroactive Equatable {
     public func hash(into hasher: inout Hasher) {
         hasher.combine(signature)
         hasher.combine(id)
@@ -96,7 +96,6 @@ class HotkeyManager {
         } else if let ref = hotkeyRef {
             hotkeyRefs[hotkeyID] = ref
             hotkeyHandlers[hotkeyID] = handler
-            logger.info("Global hotkey registered: Key \(key), Carbon Modifiers \(carbonMods)")
         }
     }
 
@@ -138,7 +137,6 @@ class HotkeyManager {
         } else if let ref = hotkeyRef {
             hotkeyRefs[hotkeyID] = ref
             hotkeyHandlers[hotkeyID] = handler
-            logger.info("Main hotkey registered: Key \(key), Modifiers \(carbonMods)")
         }
     }
 

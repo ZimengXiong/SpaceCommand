@@ -19,7 +19,7 @@ build: gen
 		build
 
 run: build
-	./$(BUILD_DIR)/Debug/SpaceCommand.app
+	./build/Debug/SpaceCommand.app/Contents/MacOS/SpaceCommand
 
 clean:
 	rm -rf build

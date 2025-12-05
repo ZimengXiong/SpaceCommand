@@ -64,7 +64,7 @@ struct GeneralSettingsTab: View {
         }
         .formStyle(.grouped)
         .onAppear {
-            spaceManager.refreshSpaces()
+            Task { await spaceManager.refreshSpaces() }
         }
     }
 }

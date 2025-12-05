@@ -69,11 +69,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         hotkeyManager?.unregisterAll()
     }
 
-    @objc private func openSwitcher() {
-        togglePanel()
-    }
-
-    @objc private func openSettingsMenu() {
+    private func openSettingsMenu() {
 
         floatingPanel?.hidePanel()
 
@@ -125,24 +121,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.handleSpaceNumberHotkey(spaceIndex: spaceIndex)
             }
         }
-
-        logger.info("Registered Control+Option+Number hotkeys for spaces 11-20")
     }
 
-    @objc private func handleSpaceNumberHotkey(spaceIndex: Int) {
-        logger.debug("Control+Option+\(spaceIndex - 10) pressed - switching to space \(spaceIndex)")
-
+    private func handleSpaceNumberHotkey(spaceIndex: Int) {
         let spaceManager = SpaceManager.shared
-
-        if !spaceManager.hasAvailableBackend {
-            logger.warning("SpaceManager: No backend available for space switching")
-            return
-        }
-
-        spaceManager.switchToSpace(by: spaceIndex)
+        guard spaceManager.hasAvailableBackend else { return }
+        Task { await spaceManager.switchToSpace(by: spaceIndex) }
     }
 
-    @objc private func quitApp() {
+    private func quitApp() {
         NSApplication.shared.terminate(nil)
     }
 

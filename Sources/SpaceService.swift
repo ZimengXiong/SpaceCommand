@@ -34,11 +34,11 @@ struct Space: Identifiable, Equatable {
 }
 
 protocol SpaceService {
-    func getSpaces() -> [Space]
-    func getCurrentSpace() -> Space?
-    func switchTo(space: Space)
-    func renameSpace(space: Space, to name: String)
-    var isAvailable: Bool { get }
+    func getSpaces() async -> [Space]
+    func getCurrentSpace() async -> Space?
+    func switchTo(space: Space) async
+    func renameSpace(space: Space, to name: String) async
+    var isAvailable: Bool { get async }
 
-    var canPerformOperations: Bool { get }
+    var canPerformOperations: Bool { get async }
 }

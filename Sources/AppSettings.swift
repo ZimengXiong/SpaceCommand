@@ -23,7 +23,6 @@ class AppSettings: ObservableObject {
     @Published var hotkeyEnabled: Bool = true {
         didSet {
             defaults.set(hotkeyEnabled, forKey: Keys.hotkeyEnabled)
-            logger.debug("Hotkey enabled changed to: \(hotkeyEnabled)")
         }
     }
 
@@ -50,7 +49,6 @@ class AppSettings: ObservableObject {
     @Published var spaceMode: SpaceMode = .auto {
         didSet {
             defaults.set(spaceMode.rawValue, forKey: Keys.spaceMode)
-            logger.info("Space mode changed to: \(spaceMode.displayName)")
         }
     }
 
@@ -58,7 +56,6 @@ class AppSettings: ObservableObject {
         setupDefaultValues()
         loadSettings()
         initializeNotifications()
-        logger.info("AppSettings initialized successfully")
     }
 
     private func setupDefaultValues() {
@@ -96,7 +93,6 @@ class AppSettings: ObservableObject {
             customHotkey = decoded
         } else {
             customHotkey = KeyboardShortcut.cmdShiftSpace
-            logger.warning("Failed to load custom hotkey, using default")
         }
     }
 
@@ -107,7 +103,6 @@ class AppSettings: ObservableObject {
             spaceMode = mode
         } else {
             spaceMode = .auto
-            logger.warning("Failed to load space mode, using default (.auto)")
         }
     }
 
@@ -118,7 +113,6 @@ class AppSettings: ObservableObject {
             as? [String: String]
         {
             spaceLabels = oldLabels
-            logger.info("Migrated labels from NativeAdapter storage")
         }
     }
 
@@ -135,14 +129,7 @@ class AppSettings: ObservableObject {
     }
 
     private func initializeNotifications() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) {
-            granted, error in
-            if let error = error {
-                self.logger.error(
-                    "Failed to request notification permission: \(error.localizedDescription)")
-            } else {
-                self.logger.debug("Notification permission granted: \(granted)")
-            }
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in
         }
     }
 
@@ -160,18 +147,8 @@ class AppSettings: ObservableObject {
     }
 
     private func updateLaunchAtLogin() {
-        let operation = launchAtLogin ? "enable" : "disable"
-        logger.info("Attempting to \(operation) launch at login")
-
         let success = launchAtLogin ? enableLaunchAtLogin() : disableLaunchAtLogin()
-
-        if success {
-            showLoginNotification(success: true, enabled: launchAtLogin)
-            logger.info("Successfully \(operation)d launch at login")
-        } else {
-            showLoginNotification(success: false, enabled: launchAtLogin)
-            logger.error("Failed to \(operation) launch at login")
-        }
+        showLoginNotification(success: success, enabled: launchAtLogin)
     }
 
     private func enableLaunchAtLogin() -> Bool {
@@ -179,7 +156,6 @@ class AppSettings: ObservableObject {
             try SMAppService.mainApp.register()
             return true
         } catch {
-            logger.error("Failed to enable launch at login: \(error)")
             return false
         }
     }
@@ -189,7 +165,6 @@ class AppSettings: ObservableObject {
             try SMAppService.mainApp.unregister()
             return true
         } catch {
-            logger.error("Failed to disable launch at login: \(error)")
             return false
         }
     }
@@ -231,6 +206,5 @@ class AppSettings: ObservableObject {
         launchAtLogin = false
         customHotkey = KeyboardShortcut.cmdShiftSpace
         spaceMode = .auto
-        logger.info("AppSettings reset to defaults")
     }
 }
