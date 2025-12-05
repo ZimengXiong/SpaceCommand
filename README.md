@@ -39,14 +39,29 @@ A macOS utility for navigating and managing spaces/virtual desktop by name with 
 
 ## Installation
 
+> [!IMPORTANT]
+> If you are not using Yabai, you must have the default keyboard shortcuts set for changing spaces (Ctrl+1..0 for spaces 1 through 10, respectively)
+
+> [!IMPORTANT]
+> There is no onboarding UI. The app will launch without a dock icon or menubar icon. Press "Command + Shift + Space" to activate it, then "Command + ," for settings.
+<details>
+<summary>Set your keyboard shortcuts to the following (via Command+Space, search "Keyboard Shortcuts", navigate to "Mission Control" in the left pane)</summary>
+</details>
+
 ### Homebrew (Recommended)
 ```bash
-brew install --cask ZimengXiong/SpaceCommand
+brew install --cask ZimengXiong/tools/SpaceCommand
+
+# Clear gatekeeper as the app is not signed by Apple
+sudo xattr -r -d 'com.apple.quarantine' /Applications/SpaceCommand.app
 ```
 
 > **Note**: [Yabai](https://github.com/koekeishiya/yabai) is preferred over native macOS backend for better reliability and performance. See [Backends](#Backends) for details.
 
-> **Note**: If you are not using Yabai, you must have the default keyboard shortcuts set for changing spaces (Ctrl+1..0 for spaces 1 through 10, respectively)
+
+
+![](EnabledKeyboardShortcuts.png)
+
 
 ## Build from Source
 
